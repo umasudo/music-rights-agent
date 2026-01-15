@@ -3,304 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Music Rights Agent - Protect Your Music Royalties</title>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <title>Music Rights Agent</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <div id="root"></div>
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-        
-        const MusicRightsAgent = () => {
-            const [step, setStep] = useState('welcome');
-            const [userData, setUserData] = useState({
-                releaseYears: '',
-                ownsMasters: null,
-                isComposer: null,
-                hasISRC: null,
+<body class="bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen p-6">
+    <div id="app" class="max-w-4xl mx-auto py-12"></div>
+
+    <script>
+        // Simple vanilla JS version - no React complexity
+        const state = {
+            step: 1,
+            data: {
                 artistName: '',
                 email: '',
-                releases: []
-            });
+                ownsMasters: null,
+                isComposer: null,
+                releaseYears: ''
+            }
+        };
 
-            const CheckCircle = () => (
-                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-            );
+        const questions = [
+            { field: 'artistName', question: "What's your artist name?", type: 'text' },
+            { field: 'email', question: "What's your email?", type: 'email' },
+            { field: 'ownsMasters', question: "Do you own the master recordings?", type: 'boolean', help: "Did you produce and pay for the recordings yourself?" },
+            { field: 'isComposer', question: "Did you write the music and lyrics?", type: 'boolean' },
+            { field: 'releaseYears', question: "When will you release (or when did you release)?", type: 'text', placeholder: "e.g. 2025, or 2023-2024" }
+        ];
 
-            const AlertCircle = ({ className = "" }) => (
-                <svg className={`w-5 h-5 ${className}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            );
+        function render() {
+            const app = document.getElementById('app');
+            
+            if (state.step === 0) {
+                app.innerHTML = renderWelcome();
+            } else if (state.step <= questions.length) {
+                app.innerHTML = renderQuestion();
+            } else if (state.step === questions.length + 1) {
+                app.innerHTML = renderAssessment();
+            } else {
+                app.innerHTML = renderActions();
+            }
+        }
 
-            const Music = () => (
-                <svg className="w-16 h-16 mx-auto text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                </svg>
-            );
-
-            const RightsStatus = ({ status, label, risk, action }) => {
-                const icons = {
-                    complete: <CheckCircle />,
-                    partial: <AlertCircle className="text-yellow-500" />,
-                    missing: <AlertCircle className="text-red-500" />
-                };
-                
-                const riskColors = {
-                    low: 'text-green-600',
-                    medium: 'text-yellow-600',
-                    high: 'text-red-600'
-                };
-
-                return (
-                    <div className="border rounded-lg p-4 mb-3 bg-white">
-                        <div className="flex items-start gap-3">
-                            {icons[status]}
-                            <div className="flex-1">
-                                <div className="font-medium text-gray-900">{label}</div>
-                                <div className={`text-sm mt-1 font-semibold ${riskColors[risk]}`}>
-                                    Money risk: {risk.toUpperCase()}
-                                </div>
-                                {action && (
-                                    <div className="mt-2 text-sm text-gray-600 bg-blue-50 p-2 rounded">
-                                        <strong>Action:</strong> {action}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                );
-            };
-
-            const WelcomeScreen = () => (
-                <div className="max-w-2xl mx-auto text-center">
-                    <Music />
-                    <h1 className="text-3xl font-bold mb-4 text-gray-900">Music Rights Agent</h1>
-                    <p className="text-lg text-gray-600 mb-8">
+        function renderWelcome() {
+            return `
+                <div class="max-w-2xl mx-auto text-center">
+                    <svg class="w-16 h-16 mx-auto mb-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                    </svg>
+                    <h1 class="text-3xl font-bold mb-4 text-gray-900">Music Rights Agent</h1>
+                    <p class="text-lg text-gray-600 mb-8">
                         Stop losing money on your music. I'll handle your rights registration automatically.
                     </p>
-                    <button
-                        onClick={() => setStep('onboarding')}
-                        className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 transition"
-                    >
+                    <button onclick="nextStep()" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 transition">
                         Get Started
                     </button>
-                    <div className="mt-8 text-sm text-gray-500">
-                        Free assessment • Takes 2 minutes
+                    <div class="mt-8 text-sm text-gray-500">Free assessment • Takes 2 minutes</div>
+                </div>
+            `;
+        }
+
+        function renderQuestion() {
+            const q = questions[state.step - 1];
+            const progress = ((state.step - 1) / questions.length) * 100;
+            
+            return `
+                <div class="max-w-xl mx-auto">
+                    <div class="mb-6">
+                        <div class="flex gap-1 mb-4">
+                            ${questions.map((_, i) => `
+                                <div class="h-1 flex-1 rounded ${i < state.step - 1 ? 'bg-blue-600' : 'bg-gray-200'}"></div>
+                            `).join('')}
+                        </div>
+                        <div class="text-sm text-gray-500 mb-2">Question ${state.step} of ${questions.length}</div>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-6 shadow-sm border">
+                        <h2 class="text-xl font-semibold mb-2 text-gray-900">${q.question}</h2>
+                        ${q.help ? `<p class="text-sm text-gray-500 mb-4">${q.help}</p>` : ''}
+
+                        ${q.type === 'boolean' ? `
+                            <div class="flex gap-3">
+                                <button onclick="answer(true)" class="flex-1 py-3 px-4 border-2 border-gray-300 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition">
+                                    Yes
+                                </button>
+                                <button onclick="answer(false)" class="flex-1 py-3 px-4 border-2 border-gray-300 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition">
+                                    No
+                                </button>
+                            </div>
+                        ` : `
+                            <div>
+                                <input 
+                                    type="${q.type}" 
+                                    id="input" 
+                                    placeholder="${q.placeholder || ''}"
+                                    class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                                    value="${state.data[q.field] || ''}"
+                                    onkeydown="if(event.key==='Enter' && this.value) answer(this.value)"
+                                >
+                                <button onclick="answerFromInput()" class="mt-3 w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition">
+                                    Continue
+                                </button>
+                            </div>
+                        `}
                     </div>
                 </div>
-            );
+            `;
+        }
 
-            const OnboardingScreen = () => {
-                const [currentQ, setCurrentQ] = useState(1);
-                const [inputValue, setInputValue] = useState('');
-
-                const questions = [
-                    {
-                        id: 1,
-                        question: "What's your artist name?",
-                        field: 'artistName',
-                        type: 'text'
-                    },
-                    {
-                        id: 2,
-                        question: "What's your email?",
-                        field: 'email',
-                        type: 'email'
-                    },
-                    {
-                        id: 3,
-                        question: "Do you own the master recordings?",
-                        field: 'ownsMasters',
-                        type: 'boolean',
-                        help: "Did you produce and pay for the recordings yourself?"
-                    },
-                    {
-                        id: 4,
-                        question: "Did you write the music and lyrics?",
-                        field: 'isComposer',
-                        type: 'boolean'
-                    },
-                    {
-                        id: 5,
-                        question: "When will you release (or when did you release)?",
-                        field: 'releaseYears',
-                        type: 'text',
-                        placeholder: "e.g. 2025, or 2023-2024"
-                    }
-                ];
-
-                const currentQuestion = questions[currentQ - 1];
-
-                const handleAnswer = (value) => {
-                    const newUserData = { ...userData, [currentQuestion.field]: value };
-                    setUserData(newUserData);
-                    setInputValue('');
-                    
-                    if (currentQ < questions.length) {
-                        setTimeout(() => setCurrentQ(currentQ + 1), 100);
-                    } else {
-                        setTimeout(() => setStep('assessment'), 100);
-                    }
-                };
-
-                useEffect(() => {
-                    setInputValue(userData[currentQuestion.field] || '');
-                }, [currentQ]);
-
-                const canContinue = inputValue && inputValue.length > 0;
-
-                return (
-                    <div className="max-w-xl mx-auto">
-                        <div className="mb-6">
-                            <div className="flex gap-1 mb-4">
-                                {questions.map((_, i) => (
-                                    <div
-                                        key={i}
-                                        className={`h-1 flex-1 rounded ${
-                                            i < currentQ ? 'bg-blue-600' : 'bg-gray-200'
-                                        }`}
-                                    />
-                                ))}
-                            </div>
-                            <div className="text-sm text-gray-500 mb-2">Question {currentQ} of {questions.length}</div>
-                        </div>
-
-                        <div className="bg-white rounded-lg p-6 shadow-sm border">
-                            <h2 className="text-xl font-semibold mb-2 text-gray-900">{currentQuestion.question}</h2>
-                            {currentQuestion.help && (
-                                <p className="text-sm text-gray-500 mb-4">{currentQuestion.help}</p>
-                            )}
-
-                            {currentQuestion.type === 'boolean' ? (
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={() => handleAnswer(true)}
-                                        className="flex-1 py-3 px-4 border-2 border-gray-300 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition"
-                                    >
-                                        Yes
-                                    </button>
-                                    <button
-                                        onClick={() => handleAnswer(false)}
-                                        className="flex-1 py-3 px-4 border-2 border-gray-300 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition"
-                                    >
-                                        No
-                                    </button>
-                                </div>
-                            ) : (
-                                <div>
-                                    <input
-                                        type={currentQuestion.type}
-                                        placeholder={currentQuestion.placeholder}
-                                        className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
-                                        value={inputValue}
-                                        onChange={(e) => setInputValue(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && canContinue) {
-                                                handleAnswer(inputValue);
-                                            }
-                                        }}
-                                        autoFocus
-                                    />
-                                    <button
-                                        onClick={() => handleAnswer(inputValue)}
-                                        disabled={!canContinue}
-                                        className="mt-3 w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
-                                    >
-                                        Continue
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                );
-            };
-
-            const AssessmentScreen = () => {
-                const assessment = {
-                    sabamWriter: {
-                        status: 'missing',
-                        label: 'SABAM Writer Registration',
-                        risk: 'high',
-                        action: 'Register as writer + publisher with SABAM before release'
-                    },
-                    neighboringRights: {
-                        status: 'missing',
-                        label: 'Neighboring Rights (Performance)',
-                        risk: 'high',
-                        action: 'Register with PlayRight (Belgium) for performer royalties'
-                    },
-                    isrc: {
-                        status: 'missing',
-                        label: 'ISRC Codes',
-                        risk: 'medium',
-                        action: 'Generate ISRCs before uploading to distributor'
-                    },
-                    metadata: {
-                        status: 'partial',
-                        label: 'Metadata & Credits',
-                        risk: 'medium',
-                        action: 'Prepare complete metadata (roles, splits, contributors)'
-                    }
-                };
-
-                const estimatedLoss = userData.ownsMasters && userData.isComposer ? '€500-2000/year' : '€200-800/year';
-
-                return (
-                    <div className="max-w-3xl mx-auto">
-                        <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4 mb-6">
-                            <div className="flex items-start gap-3">
-                                <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
-                                <div>
-                                    <div className="font-semibold text-red-900">Potential Revenue Loss</div>
-                                    <div className="text-red-700 text-sm mt-1">
-                                        Without proper registration, you could lose <strong>{estimatedLoss}</strong> per release
-                                    </div>
+        function renderAssessment() {
+            const estimatedLoss = state.data.ownsMasters && state.data.isComposer ? '€500-2000/year' : '€200-800/year';
+            
+            return `
+                <div class="max-w-3xl mx-auto">
+                    <div class="bg-red-50 border-2 border-red-200 rounded-lg p-4 mb-6">
+                        <div class="flex items-start gap-3">
+                            <svg class="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div>
+                                <div class="font-semibold text-red-900">Potential Revenue Loss</div>
+                                <div class="text-red-700 text-sm mt-1">
+                                    Without proper registration, you could lose <strong>${estimatedLoss}</strong> per release
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <h2 className="text-2xl font-bold mb-4 text-gray-900">Your Rights Status</h2>
-                        <p className="text-gray-600 mb-6">Based on your answers, here's what needs to be done:</p>
+                    <h2 class="text-2xl font-bold mb-4 text-gray-900">Your Rights Status</h2>
+                    <p class="text-gray-600 mb-6">Based on your answers, here's what needs to be done:</p>
 
-                        {Object.values(assessment).map((item, i) => (
-                            <RightsStatus key={i} {...item} />
-                        ))}
+                    <div class="space-y-3">
+                        ${renderStatus('missing', 'SABAM Writer Registration', 'high', 'Register as writer + publisher with SABAM before release')}
+                        ${renderStatus('missing', 'Neighboring Rights (Performance)', 'high', 'Register with PlayRight (Belgium) for performer royalties')}
+                        ${renderStatus('missing', 'ISRC Codes', 'medium', 'Generate ISRCs before uploading to distributor')}
+                        ${renderStatus('partial', 'Metadata & Credits', 'medium', 'Prepare complete metadata (roles, splits, contributors)')}
+                    </div>
 
-                        <div className="mt-8 flex gap-3">
-                            <button
-                                onClick={() => setStep('actions')}
-                                className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition"
-                            >
-                                Start Fixing This
-                            </button>
-                            <button
-                                onClick={() => setStep('welcome')}
-                                className="px-6 py-3 border-2 border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition"
-                            >
-                                Start Over
-                            </button>
+                    <div class="mt-8 flex gap-3">
+                        <button onclick="nextStep()" class="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition">
+                            Start Fixing This
+                        </button>
+                        <button onclick="state.step = 0; render();" class="px-6 py-3 border-2 border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition">
+                            Start Over
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderStatus(status, label, risk, action) {
+            const icon = status === 'missing' ? 
+                '<svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>' :
+                '<svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>';
+            
+            const riskColor = risk === 'high' ? 'text-red-600' : 'text-yellow-600';
+            
+            return `
+                <div class="border rounded-lg p-4 bg-white">
+                    <div class="flex items-start gap-3">
+                        ${icon}
+                        <div class="flex-1">
+                            <div class="font-medium text-gray-900">${label}</div>
+                            <div class="text-sm mt-1 font-semibold ${riskColor}">Money risk: ${risk.toUpperCase()}</div>
+                            <div class="mt-2 text-sm text-gray-600 bg-blue-50 p-2 rounded">
+                                <strong>Action:</strong> ${action}
+                            </div>
                         </div>
                     </div>
-                );
-            };
+                </div>
+            `;
+        }
 
-            const ActionsScreen = () => {
-                const [activeTab, setActiveTab] = useState('sabam');
-
-                const sabamEmail = `Subject: SABAM Writer & Publisher Registration Request
+        function renderActions() {
+            const sabamEmail = `Subject: SABAM Writer & Publisher Registration Request
 
 Dear SABAM,
 
 I am an independent musician based in Belgium and would like to register as both a writer and publisher.
 
-Artist Name: ${userData.artistName}
-Email: ${userData.email}
+Artist Name: ${state.data.artistName}
+Email: ${state.data.email}
 Role: Composer, Lyricist, Producer, Performer
 
 I own 100% of my master recordings and compositions for upcoming releases.
@@ -308,182 +190,91 @@ I own 100% of my master recordings and compositions for upcoming releases.
 Could you please send me the registration forms and next steps?
 
 Thank you,
-${userData.artistName}`;
+${state.data.artistName}`;
 
-                const playRightEmail = `Subject: PlayRight Performer Registration
+            return `
+                <div class="max-w-4xl mx-auto">
+                    <h2 class="text-2xl font-bold mb-2 text-gray-900">Action Dashboard</h2>
+                    <p class="text-gray-600 mb-6">Complete these in order. I've prepared everything for you.</p>
 
-Dear PlayRight,
-
-I am a performing artist and would like to register for neighboring rights collection.
-
-Artist Name: ${userData.artistName}
-Email: ${userData.email}
-
-I perform on my own recordings as the primary artist and own the masters.
-
-Please send me the registration information.
-
-Best regards,
-${userData.artistName}`;
-
-                return (
-                    <div className="max-w-4xl mx-auto">
-                        <h2 className="text-2xl font-bold mb-2 text-gray-900">Action Dashboard</h2>
-                        <p className="text-gray-600 mb-6">Complete these in order. I've prepared everything for you.</p>
-
-                        <div className="flex gap-2 mb-4 border-b overflow-x-auto">
-                            <button
-                                onClick={() => setActiveTab('sabam')}
-                                className={`px-4 py-2 font-medium whitespace-nowrap ${
-                                    activeTab === 'sabam'
-                                        ? 'text-blue-600 border-b-2 border-blue-600'
-                                        : 'text-gray-500 hover:text-gray-700'
-                                }`}
-                            >
-                                SABAM Registration
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('playright')}
-                                className={`px-4 py-2 font-medium whitespace-nowrap ${
-                                    activeTab === 'playright'
-                                        ? 'text-blue-600 border-b-2 border-blue-600'
-                                        : 'text-gray-500 hover:text-gray-700'
-                                }`}
-                            >
-                                PlayRight
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('isrc')}
-                                className={`px-4 py-2 font-medium whitespace-nowrap ${
-                                    activeTab === 'isrc'
-                                        ? 'text-blue-600 border-b-2 border-blue-600'
-                                        : 'text-gray-500 hover:text-gray-700'
-                                }`}
-                            >
-                                ISRC Setup
-                            </button>
+                    <div class="bg-white rounded-lg p-6 border">
+                        <div class="flex items-start gap-3 mb-4 bg-blue-50 p-3 rounded">
+                            <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div class="text-sm text-blue-900">
+                                <strong>Priority: HIGH</strong> — Do this first. Takes 5 minutes.
+                            </div>
                         </div>
 
-                        {activeTab === 'sabam' && (
-                            <div className="bg-white rounded-lg p-6 border">
-                                <div className="flex items-start gap-3 mb-4 bg-blue-50 p-3 rounded">
-                                    <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <div className="text-sm text-blue-900">
-                                        <strong>Priority: HIGH</strong> — Do this first. Takes 5 minutes.
-                                    </div>
-                                </div>
+                        <h3 class="font-semibold text-lg mb-3 text-gray-900">Step 1: Email SABAM</h3>
+                        <p class="text-sm text-gray-600 mb-4">
+                            Copy this email and send it to <strong>info@sabam.be</strong>
+                        </p>
 
-                                <h3 className="font-semibold text-lg mb-3 text-gray-900">Step 1: Email SABAM</h3>
-                                <p className="text-sm text-gray-600 mb-4">
-                                    Copy this email and send it to <strong>info@sabam.be</strong>
-                                </p>
+                        <div class="bg-gray-50 p-4 rounded border mb-4 font-mono text-sm whitespace-pre-wrap overflow-x-auto">${sabamEmail}</div>
 
-                                <div className="bg-gray-50 p-4 rounded border mb-4 font-mono text-sm whitespace-pre-wrap overflow-x-auto">
-                                    {sabamEmail}
-                                </div>
+                        <button onclick="copyEmail()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition">
+                            Copy Email & Instructions
+                        </button>
 
-                                <button
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(sabamEmail);
-                                        alert('Email copied! Now paste it into your email client and send to info@sabam.be');
-                                    }}
-                                    className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition"
-                                >
-                                    Copy Email & Instructions
-                                </button>
-
-                                <div className="mt-4 text-sm text-gray-600 bg-yellow-50 p-3 rounded border border-yellow-200">
-                                    <strong>What happens next:</strong> SABAM will send you registration forms (1-2 days). Fill them out and return. You'll be registered within 2 weeks.
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'playright' && (
-                            <div className="bg-white rounded-lg p-6 border">
-                                <h3 className="font-semibold text-lg mb-3 text-gray-900">Step 2: Register for Neighboring Rights</h3>
-                                <p className="text-sm text-gray-600 mb-4">
-                                    This protects your rights as a <strong>performer</strong> on recordings.
-                                </p>
-
-                                <div className="bg-gray-50 p-4 rounded border mb-4 font-mono text-sm whitespace-pre-wrap overflow-x-auto">
-                                    {playRightEmail}
-                                </div>
-
-                                <button
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(playRightEmail);
-                                        alert('Email copied! Send to info@playright.be');
-                                    }}
-                                    className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition"
-                                >
-                                    Copy Email
-                                </button>
-
-                                <div className="mt-4 text-sm text-gray-600">
-                                    <strong>Alternative:</strong> You can also register at{' '}
-                                    <a href="https://playright.be" target="_blank" rel="noopener" className="text-blue-600 underline">
-                                        playright.be
-                                    </a>
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'isrc' && (
-                            <div className="bg-white rounded-lg p-6 border">
-                                <h3 className="font-semibold text-lg mb-3 text-gray-900">Step 3: Get ISRC Codes</h3>
-                                <p className="text-sm text-gray-600 mb-4">
-                                    ISRC = unique identifier for each track. You need these before uploading to Spotify/Apple Music.
-                                </p>
-
-                                <div className="bg-blue-50 p-4 rounded mb-4">
-                                    <div className="font-medium mb-2 text-gray-900">Easiest option:</div>
-                                    <div className="text-sm text-gray-700">
-                                        Most distributors (DistroKid, TuneCore, CD Baby) generate ISRCs automatically when you upload.
-                                    </div>
-                                </div>
-
-                                <div className="bg-gray-50 p-4 rounded border">
-                                    <div className="font-medium mb-2 text-gray-900">If you want your own ISRCs:</div>
-                                    <ol className="text-sm text-gray-700 space-y-2 list-decimal list-inside">
-                                        <li>Get a registrant code from <a href="https://www.usisrc.org" target="_blank" rel="noopener" className="text-blue-600 underline">ISRC.org</a></li>
-                                        <li>Generate codes for each track using their tool</li>
-                                        <li>Embed them in your distributor's metadata</li>
-                                    </ol>
-                                </div>
-
-                                <div className="mt-4 text-sm text-yellow-900 bg-yellow-50 p-3 rounded border border-yellow-200">
-                                    <strong>Recommendation:</strong> Let your distributor handle this unless you're releasing on multiple platforms simultaneously.
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="mt-6">
-                            <button
-                                onClick={() => setStep('welcome')}
-                                className="text-gray-600 hover:text-gray-900 font-medium"
-                            >
-                                ← Back to Start
-                            </button>
+                        <div class="mt-4 text-sm text-gray-600 bg-yellow-50 p-3 rounded border border-yellow-200">
+                            <strong>What happens next:</strong> SABAM will send you registration forms (1-2 days). Fill them out and return. You'll be registered within 2 weeks.
                         </div>
                     </div>
-                );
-            };
 
-            return (
-                <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-6">
-                    <div className="max-w-6xl mx-auto py-12">
-                        {step === 'welcome' && <WelcomeScreen />}
-                        {step === 'onboarding' && <OnboardingScreen />}
-                        {step === 'assessment' && <AssessmentScreen />}
-                        {step === 'actions' && <ActionsScreen />}
+                    <div class="mt-6">
+                        <button onclick="state.step = 0; render();" class="text-gray-600 hover:text-gray-900 font-medium">
+                            ← Back to Start
+                        </button>
                     </div>
                 </div>
-            );
-        };
-        
-        ReactDOM.render(<MusicRightsAgent />, document.getElementById('root'));
+            `;
+        }
+
+        function answer(value) {
+            const q = questions[state.step - 1];
+            state.data[q.field] = value;
+            nextStep();
+        }
+
+        function answerFromInput() {
+            const input = document.getElementById('input');
+            if (input && input.value) {
+                answer(input.value);
+            }
+        }
+
+        function nextStep() {
+            state.step++;
+            render();
+        }
+
+        function copyEmail() {
+            const sabamEmail = `Subject: SABAM Writer & Publisher Registration Request
+
+Dear SABAM,
+
+I am an independent musician based in Belgium and would like to register as both a writer and publisher.
+
+Artist Name: ${state.data.artistName}
+Email: ${state.data.email}
+Role: Composer, Lyricist, Producer, Performer
+
+I own 100% of my master recordings and compositions for upcoming releases.
+
+Could you please send me the registration forms and next steps?
+
+Thank you,
+${state.data.artistName}`;
+
+            navigator.clipboard.writeText(sabamEmail);
+            alert('Email copied! Now paste it into your email client and send to info@sabam.be');
+        }
+
+        // Start the app
+        state.step = 0;
+        render();
     </script>
 </body>
 </html>
