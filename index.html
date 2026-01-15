@@ -12,7 +12,7 @@
 <body>
     <div id="root"></div>
     <script type="text/babel">
-        const { useState } = React;
+        const { useState, useEffect } = React;
         
         const MusicRightsAgent = () => {
             const [step, setStep] = useState('welcome');
@@ -138,18 +138,22 @@
                 const currentQuestion = questions[currentQ - 1];
 
                 const handleAnswer = (value) => {
-                    setUserData({ ...userData, [currentQuestion.field]: value });
+                    const newUserData = { ...userData, [currentQuestion.field]: value };
+                    setUserData(newUserData);
                     setInputValue('');
+                    
                     if (currentQ < questions.length) {
-                        setCurrentQ(currentQ + 1);
+                        setTimeout(() => setCurrentQ(currentQ + 1), 100);
                     } else {
-                        setStep('assessment');
+                        setTimeout(() => setStep('assessment'), 100);
                     }
                 };
 
-                React.useEffect(() => {
+                useEffect(() => {
                     setInputValue(userData[currentQuestion.field] || '');
                 }, [currentQ]);
+
+                const canContinue = inputValue && inputValue.length > 0;
 
                 return (
                     <div className="max-w-xl mx-auto">
@@ -196,16 +200,16 @@
                                         className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
                                         value={inputValue}
                                         onChange={(e) => setInputValue(e.target.value)}
-                                        onKeyPress={(e) => {
-                                            if (e.key === 'Enter' && inputValue.trim()) {
-                                                handleAnswer(inputValue.trim());
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && canContinue) {
+                                                handleAnswer(inputValue);
                                             }
                                         }}
                                         autoFocus
                                     />
                                     <button
-                                        onClick={() => inputValue.trim() && handleAnswer(inputValue.trim())}
-                                        disabled={!inputValue.trim()}
+                                        onClick={() => handleAnswer(inputValue)}
+                                        disabled={!canContinue}
                                         className="mt-3 w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
                                     >
                                         Continue
