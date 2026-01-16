@@ -45,22 +45,28 @@
                 contributions: []
             };
         }
-        function clearDB() {
-            localStorage.removeItem(STORAGE_KEY);
-            window.location.reload();
-        }
+       function clearDB() {
+    localStorage.removeItem(STORAGE_KEY);
+    clearStep();
+    window.location.reload();
+}
 
         // ---- App State (Wizard Flow) ----
-        const state = {
-            step: 0,
-            data: {
-                artistName: artistDB.artist.name || "",
-                email: artistDB.artist.email || "",
-                ownsMasters: artistDB.artist.ownsMasters || null,
-                isComposer: artistDB.artist.isComposer || null,
-                releaseYears: artistDB.artist.releaseYears || ""
-            }
-        };
+        // ---- Wizard State (with resume support) ----
+const WIZARD_KEY = "wizardStep";
+
+const savedStep = parseInt(localStorage.getItem(WIZARD_KEY), 10);
+
+const state = {
+    step: Number.isInteger(savedStep) ? savedStep : 0,
+    data: {
+        artistName: artistDB.artist.name || "",
+        email: artistDB.artist.email || "",
+        ownsMasters: artistDB.artist.ownsMasters || null,
+        isComposer: artistDB.artist.isComposer || null,
+        releaseYears: artistDB.artist.releaseYears || ""
+    }
+};
 
         const questions = [
             { field: 'artistName', question: "What's your artist name?", type: 'text' },
@@ -267,21 +273,20 @@ ${state.data.artistName}`;
             else if (q.field === "isComposer") artistDB.artist.isComposer = value;
             else if (q.field === "releaseYears") artistDB.artist.releaseYears = value;
             saveDB();
+            function saveStep() {
+    localStorage.setItem(WIZARD_KEY, state.step);
+}
 
-            nextStep();
-        }
+function clearStep() {
+    localStorage.removeItem(WIZARD_KEY);
+}
 
-        function answerFromInput() {
-            const input = document.getElementById('input');
-            if (input && input.value) {
-                answer(input.value);
-            }
-        }
 
-        function nextStep() {
-            state.step++;
-            render();
-        }
+         function nextStep() {
+    state.step++;
+    saveStep();
+    render();
+}
 
         function copyEmail() {
             const sabamEmail = `Subject: SABAM Writer & Publisher Registration Request
