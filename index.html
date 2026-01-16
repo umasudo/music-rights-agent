@@ -235,27 +235,27 @@ Release: 2024"
                             </button>
                         </div>
 
-                        <div class="bg-red-50 border-2 border-red-200 rounded-xl p-6 mb-8">
+                        <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 mb-8">
                             <div class="flex items-start gap-4">
-                                <svg class="w-8 h-8 text-red-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                <svg class="w-8 h-8 text-blue-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 <div>
-                                    <div class="font-bold text-red-900 text-lg mb-1">You're losing money right now</div>
-                                    <div class="text-red-800">
-                                        Without proper registration, you could be losing <strong>${estimatedLoss}</strong> per release in unclaimed royalties.
+                                    <div class="font-bold text-blue-900 text-lg mb-1">Registration Status</div>
+                                    <div class="text-blue-800">
+                                        Independent artists often miss royalties from streaming, radio, and public performances because they haven't registered with collection societies. Let's make sure you're claiming what you're entitled to.
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <h3 class="text-xl font-bold text-gray-900 mb-4">Your Rights Status</h3>
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">What We Found</h3>
                         
                         <div class="space-y-3 mb-8">
-                            ${renderStatusCard('missing', 'SABAM Writer Registration', 'high', 'Register as writer + publisher with SABAM')}
-                            ${renderStatusCard('missing', 'Neighboring Rights', 'high', 'Register with PlayRight for performer royalties')}
-                            ${renderStatusCard('missing', 'ISRC Codes', 'medium', 'Generate ISRCs before distribution')}
-                            ${renderStatusCard('partial', 'Metadata Complete', 'medium', 'Verify all credits and splits')}
+                            ${renderStatusCard('missing', 'SABAM Writer Registration', 'high', 'Register as writer + publisher to collect composition royalties')}
+                            ${renderStatusCard('missing', 'Neighboring Rights', 'high', 'Register with PlayRight to collect performer royalties')}
+                            ${renderStatusCard('missing', 'ISRC Codes', 'medium', 'Generate unique identifiers for each track before distribution')}
+                            ${renderStatusCard('partial', 'Metadata Documentation', 'medium', 'Ensure all credits, roles, and splits are documented')}
                         </div>
 
                         <button 
@@ -265,8 +265,9 @@ Release: 2024"
                             📧 Copy SABAM Registration Email
                         </button>
 
-                        <div class="text-center text-sm text-gray-500">
-                            <p>Want me to handle this automatically? <span class="font-medium text-blue-600">Premium automation coming soon</span></p>
+                        <div class="text-center text-sm text-gray-500 mt-6">
+                            <p><strong>Coming soon:</strong> Full automation - we'll handle registration for you</p>
+                            <p class="mt-2">Want early access? Join the beta waitlist below</p>
                         </div>
                     </div>
 
@@ -277,12 +278,13 @@ Release: 2024"
             `;
         }
 
-        function renderStatusCard(status, label, risk, action) {
+        function renderStatusCard(status, label, priority, action) {
             const icon = status === 'missing' ? 
-                '<svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>' :
+                '<svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>' :
                 '<svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>';
             
-            const riskColor = risk === 'high' ? 'text-red-600' : 'text-yellow-600';
+            const priorityColor = priority === 'high' ? 'text-blue-600' : 'text-gray-600';
+            const priorityLabel = priority === 'high' ? 'Important' : 'Recommended';
             
             return `
                 <div class="border-2 border-gray-200 rounded-xl p-4 hover:border-blue-300 transition">
@@ -290,9 +292,9 @@ Release: 2024"
                         ${icon}
                         <div class="flex-1">
                             <div class="font-semibold text-gray-900 text-lg">${label}</div>
-                            <div class="text-sm mt-1 font-semibold ${riskColor}">Risk: ${risk.toUpperCase()}</div>
+                            <div class="text-sm mt-1 font-semibold ${priorityColor}">${priorityLabel}</div>
                             <div class="mt-2 text-sm text-gray-700 bg-blue-50 p-3 rounded-lg">
-                                <strong>Next step:</strong> ${action}
+                                <strong>What this means:</strong> ${action}
                             </div>
                         </div>
                     </div>
