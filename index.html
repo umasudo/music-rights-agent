@@ -10,9 +10,9 @@
     <div id="app" class="min-h-screen flex items-center justify-center p-6"></div>
 
     <script>
-        // In-memory state (no localStorage needed)
+        // In-memory state
         const state = {
-            step: 'upload', // upload, processing, review, dashboard
+            step: 'upload',
             artist: {
                 name: '',
                 email: '',
@@ -220,8 +220,6 @@ Release: 2024"
         }
 
         function renderDashboard() {
-            const estimatedLoss = state.artist.ownsMasters && state.artist.isComposer ? '€500-2000/year' : '€200-800/year';
-
             return `
                 <div class="max-w-4xl w-full">
                     <div class="bg-white rounded-2xl shadow-xl p-8 mb-6">
@@ -243,31 +241,154 @@ Release: 2024"
                                 <div>
                                     <div class="font-bold text-blue-900 text-lg mb-1">Registration Status</div>
                                     <div class="text-blue-800">
-                                        Independent artists often miss royalties from streaming, radio, and public performances because they haven't registered with collection societies. Let's make sure you're claiming what you're entitled to.
+                                        Independent artists often miss royalties from streaming, radio, and public performances because they haven't registered with collection societies. Let's get you set up.
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <h3 class="text-xl font-bold text-gray-900 mb-4">What We Found</h3>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-4">Your Action Plan</h3>
+                        <p class="text-gray-600 mb-6">Complete these tasks in order. Each takes 5-10 minutes.</p>
                         
-                        <div class="space-y-3 mb-8">
-                            ${renderStatusCard('missing', 'SABAM Writer Registration', 'high', 'Register as writer + publisher to collect composition royalties')}
-                            ${renderStatusCard('missing', 'Neighboring Rights', 'high', 'Register with PlayRight to collect performer royalties')}
-                            ${renderStatusCard('missing', 'ISRC Codes', 'medium', 'Generate unique identifiers for each track before distribution')}
-                            ${renderStatusCard('partial', 'Metadata Documentation', 'medium', 'Ensure all credits, roles, and splits are documented')}
+                        <div class="space-y-4 mb-8">
+                            <!-- Task 1: SABAM -->
+                            <div class="border-2 border-blue-300 bg-blue-50 rounded-xl p-5">
+                                <div class="flex items-start gap-4">
+                                    <div class="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
+                                        1
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <div>
+                                                <h4 class="font-bold text-gray-900 text-lg">Register with SABAM (Writer & Publisher)</h4>
+                                                <p class="text-sm text-gray-600 mt-1">Collects composition royalties from streaming, radio, and public performance</p>
+                                                <span class="inline-block mt-2 text-xs font-semibold text-blue-700 bg-blue-200 px-2 py-1 rounded">⏱ 5 minutes</span>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3 flex gap-2">
+                                            <button 
+                                                onclick="copySabamEmail()"
+                                                class="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition"
+                                            >
+                                                📧 Copy Registration Email
+                                            </button>
+                                            <button 
+                                                onclick="window.open('https://www.sabam.be/en/become-member', '_blank')"
+                                                class="px-4 py-3 border-2 border-blue-600 text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition"
+                                            >
+                                                🔗 Open SABAM Site
+                                            </button>
+                                        </div>
+                                        <div class="mt-3 text-sm text-gray-600 bg-white p-3 rounded border">
+                                            <strong>What to do:</strong> Copy the email, send it to info@sabam.be, then wait 1-2 days for their registration forms.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Task 2: PlayRight -->
+                            <div class="border-2 border-gray-300 rounded-xl p-5">
+                                <div class="flex items-start gap-4">
+                                    <div class="flex-shrink-0 w-8 h-8 bg-gray-400 text-white rounded-full flex items-center justify-center font-bold">
+                                        2
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <div>
+                                                <h4 class="font-bold text-gray-900 text-lg">Register with PlayRight (Performer)</h4>
+                                                <p class="text-sm text-gray-600 mt-1">Collects performer royalties from radio, TV, and public venues</p>
+                                                <span class="inline-block mt-2 text-xs font-semibold text-gray-700 bg-gray-200 px-2 py-1 rounded">⏱ 5 minutes</span>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3 flex gap-2">
+                                            <button 
+                                                onclick="copyPlayRightEmail()"
+                                                class="flex-1 bg-gray-700 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-800 transition"
+                                            >
+                                                📧 Copy Registration Email
+                                            </button>
+                                            <button 
+                                                onclick="window.open('https://playright.be', '_blank')"
+                                                class="px-4 py-3 border-2 border-gray-700 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
+                                            >
+                                                🔗 Open PlayRight Site
+                                            </button>
+                                        </div>
+                                        <div class="mt-3 text-sm text-gray-600 bg-gray-50 p-3 rounded border">
+                                            <strong>What to do:</strong> Copy the email, send it to info@playright.be, or register directly on their website.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Task 3: ISRC -->
+                            <div class="border-2 border-gray-300 rounded-xl p-5">
+                                <div class="flex items-start gap-4">
+                                    <div class="flex-shrink-0 w-8 h-8 bg-gray-400 text-white rounded-full flex items-center justify-center font-bold">
+                                        3
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <div>
+                                                <h4 class="font-bold text-gray-900 text-lg">Get ISRC Codes for Your Tracks</h4>
+                                                <p class="text-sm text-gray-600 mt-1">Unique identifiers needed before uploading to Spotify, Apple Music, etc.</p>
+                                                <span class="inline-block mt-2 text-xs font-semibold text-gray-700 bg-gray-200 px-2 py-1 rounded">⏱ 10 minutes</span>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <button 
+                                                onclick="window.open('https://www.usisrc.org/about/index.html', '_blank')"
+                                                class="w-full bg-gray-700 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-800 transition"
+                                            >
+                                                📖 Learn About ISRC Codes
+                                            </button>
+                                        </div>
+                                        <div class="mt-3 text-sm text-gray-600 bg-gray-50 p-3 rounded border">
+                                            <strong>Easy option:</strong> Most distributors (DistroKid, TuneCore, CD Baby) generate ISRCs automatically when you upload. If you're using a distributor, you can skip this step.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Task 4: Metadata -->
+                            <div class="border-2 border-gray-300 rounded-xl p-5">
+                                <div class="flex items-start gap-4">
+                                    <div class="flex-shrink-0 w-8 h-8 bg-gray-400 text-white rounded-full flex items-center justify-center font-bold">
+                                        4
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <div>
+                                                <h4 class="font-bold text-gray-900 text-lg">Document Your Metadata</h4>
+                                                <p class="text-sm text-gray-600 mt-1">Keep a master list of all credits, roles, and ownership splits</p>
+                                                <span class="inline-block mt-2 text-xs font-semibold text-gray-700 bg-gray-200 px-2 py-1 rounded">⏱ 15 minutes</span>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3 text-sm text-gray-600 bg-gray-50 p-3 rounded border">
+                                            <strong>Why this matters:</strong> You'll need this info for every registration, distributor, and royalty claim. Having it organized saves hours of work later.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <button 
-                            onclick="copySabamEmail()"
-                            class="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-blue-700 transition shadow-lg mb-4"
-                        >
-                            📧 Copy SABAM Registration Email
-                        </button>
-
-                        <div class="text-center text-sm text-gray-500 mt-6">
-                            <p><strong>Coming soon:</strong> Full automation - we'll handle registration for you</p>
-                            <p class="mt-2">Want early access? Join the beta waitlist below</p>
+                        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
+                            <h3 class="text-xl font-bold mb-2">🚀 Coming Soon: Full Automation</h3>
+                            <p class="mb-4 text-blue-100">We're building a system that will handle all registrations, forms, and follow-ups automatically. You'll just upload your credits once and we'll do the rest.</p>
+                            <div class="flex gap-3">
+                                <button 
+                                    onclick="alert('Beta waitlist opening soon! Check back in a few days or follow us on social media.')"
+                                    class="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
+                                >
+                                    Join Beta Waitlist
+                                </button>
+                                <button 
+                                    onclick="alert('Share this: rights.bewatermyfriend.be')"
+                                    class="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+                                >
+                                    Share with Friends
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -278,31 +399,6 @@ Release: 2024"
             `;
         }
 
-        function renderStatusCard(status, label, priority, action) {
-            const icon = status === 'missing' ? 
-                '<svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>' :
-                '<svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>';
-            
-            const priorityColor = priority === 'high' ? 'text-blue-600' : 'text-gray-600';
-            const priorityLabel = priority === 'high' ? 'Important' : 'Recommended';
-            
-            return `
-                <div class="border-2 border-gray-200 rounded-xl p-4 hover:border-blue-300 transition">
-                    <div class="flex items-start gap-4">
-                        ${icon}
-                        <div class="flex-1">
-                            <div class="font-semibold text-gray-900 text-lg">${label}</div>
-                            <div class="text-sm mt-1 font-semibold ${priorityColor}">${priorityLabel}</div>
-                            <div class="mt-2 text-sm text-gray-700 bg-blue-50 p-3 rounded-lg">
-                                <strong>What this means:</strong> ${action}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // --- File handling ---
         function handleDragOver(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -357,28 +453,23 @@ Release: 2024"
             
             setTimeout(() => {
                 processText(text);
-            }, 1500); // Simulate processing time
+            }, 1500);
         }
 
         function processText(text) {
             state.uploadedText = text;
             
-            // Simple extraction logic (replace with AI later)
             const lines = text.split('\n');
             
-            // Extract artist name
             const artistMatch = text.match(/(?:artist|by|name)[\s:]+([^\n,]+)/i);
             if (artistMatch) state.artist.name = artistMatch[1].trim();
             
-            // Extract email
             const emailMatch = text.match(/[\w.-]+@[\w.-]+\.\w+/);
             if (emailMatch) state.artist.email = emailMatch[0];
             
-            // Extract year
             const yearMatch = text.match(/(20\d{2}(?:\s*[-–]\s*20\d{2})?)/);
             if (yearMatch) state.artist.releaseYears = yearMatch[1];
             
-            // Detect ownership keywords
             if (/(?:own|produced by|master)/i.test(text)) {
                 state.artist.ownsMasters = true;
             }
@@ -386,7 +477,6 @@ Release: 2024"
                 state.artist.isComposer = true;
             }
             
-            // Extract track titles
             state.artist.tracks = lines
                 .filter(line => /^(?:\d+[\.\):]|\-|•|track)/i.test(line.trim()))
                 .map(line => line.replace(/^(?:\d+[\.\):]|\-|•|track)\s*/i, '').trim())
@@ -437,7 +527,27 @@ ${state.artist.name}`;
             alert('✓ Email copied! Paste it into your email client and send to info@sabam.be');
         }
 
-        // Start app
+        function copyPlayRightEmail() {
+            const email = `Subject: PlayRight Performer Registration
+
+Dear PlayRight,
+
+I am a performing artist and would like to register for neighboring rights collection.
+
+Artist Name: ${state.artist.name}
+Email: ${state.artist.email}
+
+I perform on my own recordings as the primary artist and own the masters.
+
+Please send me the registration information.
+
+Best regards,
+${state.artist.name}`;
+
+            navigator.clipboard.writeText(email);
+            alert('✓ Email copied! Paste it into your email client and send to info@playright.be');
+        }
+
         render();
     </script>
 </body>
