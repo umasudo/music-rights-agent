@@ -8,88 +8,59 @@
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen p-6">
     <div id="app" class="max-w-4xl mx-auto py-12"></div>
+    <div class="fixed bottom-2 right-2">
+        <button onclick="clearDB()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 text-xs">Clear Data</button>
+    </div>
 
     <script>
-    // ---- 1. INIT ----
-    const STORAGE_KEY = "musicRightsAgentDB";
-    let artistDB = loadDB();
+        // ---- LocalStorage Artist DB ----
+        const STORAGE_KEY = "musicRightsAgentDB";
+        let artistDB = loadDB();
 
-    // ---- 2. SAVE & LOAD ----
-    function saveDB() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(artistDB));
-        // Debug: see result in console
-        console.log("artistDB (saved)", artistDB);
-    }
-    function loadDB() {
-        const data = localStorage.getItem(STORAGE_KEY);
-        if (data) {
-            try {
-                const parsed = JSON.parse(data);
-                // Debug: see loaded object
-                console.log("artistDB (loaded)", parsed);
-                return parsed;
-            } catch (e) {
-                console.warn("Failed to parse saved artistDB, starting fresh");
-            }
+        function saveDB() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(artistDB));
+            console.log("artistDB (saved)", artistDB);
         }
-        // Default DB structure
-        return {
-            artist: {
-                name: "",
-                email: "",
-                country: "BE"
-            },
-            releases: [],
-            tracks: [],
-            persons: [],
-            contributions: []
+        function loadDB() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (data) {
+                try {
+                    const parsed = JSON.parse(data);
+                    console.log("artistDB (loaded)", parsed);
+                    return parsed;
+                } catch (e) {
+                    console.warn("Failed to parse saved artistDB, starting fresh");
+                }
+            }
+            // Default DB structure
+            return {
+                artist: {
+                    name: "",
+                    email: "",
+                    country: "BE"
+                },
+                releases: [],
+                tracks: [],
+                persons: [],
+                contributions: []
+            };
+        }
+        function clearDB() {
+            localStorage.removeItem(STORAGE_KEY);
+            window.location.reload();
+        }
+
+        // ---- App State (Wizard Flow) ----
+        const state = {
+            step: 0,
+            data: {
+                artistName: artistDB.artist.name || "",
+                email: artistDB.artist.email || "",
+                ownsMasters: artistDB.artist.ownsMasters || null,
+                isComposer: artistDB.artist.isComposer || null,
+                releaseYears: artistDB.artist.releaseYears || ""
+            }
         };
-    }
-
-    // ---- 3. HOOK INTO YOUR FLOW ----
-    // Your previous state/data logic replaced by artistDB.artist
-    // Update artistDB as user answers questions, then saveDB()
-
-    // Example: modify this logic to match your question flow
-    // The rest of your wizard should set artistDB.artist.name etc.
-
-    // Here’s a simple way to update artistDB from your existing answer() logic:
-    function answer(value) {
-        const q = questions[state.step - 1];
-        // Save the answer to artistDB
-        if (q.field === "artistName") artistDB.artist.name = value;
-        else if (q.field === "email") artistDB.artist.email = value;
-        else if (q.field === "ownsMasters") artistDB.artist.ownsMasters = value;
-        else if (q.field === "isComposer") artistDB.artist.isComposer = value;
-        else if (q.field === "releaseYears") artistDB.artist.releaseYears = value;
-        // ...add more mappings as you grow your DB structure
-
-        // Save to localStorage
-        saveDB();
-        nextStep();
-    }
-
-    // ---- 4. RESTORE ON LOAD ----
-    // When rendering questions, prefill inputs from artistDB if data exists
-
-    // Example (in your renderQuestion function, after you get q):
-    // value="${artistDB.artist.name || ''}"
-    // (Repeat for other fields as needed)
-
-    // ---- 5. CLEAR FUNCTION (optional for debugging) ----
-    function clearDB() {
-        localStorage.removeItem(STORAGE_KEY);
-        window.location.reload();
-    }
-
-    // ---- 6. INITIAL DEBUG LOG ----
-    console.log("artistDB (init)", artistDB);
-
-    // ---- 7. START THE APP AS BEFORE ----
-    state.step = 0;
-    render();
-</script>
-
 
         const questions = [
             { field: 'artistName', question: "What's your artist name?", type: 'text' },
@@ -101,7 +72,6 @@
 
         function render() {
             const app = document.getElementById('app');
-            
             if (state.step === 0) {
                 app.innerHTML = renderWelcome();
             } else if (state.step <= questions.length) {
@@ -133,8 +103,6 @@
 
         function renderQuestion() {
             const q = questions[state.step - 1];
-            const progress = ((state.step - 1) / questions.length) * 100;
-            
             return `
                 <div class="max-w-xl mx-auto">
                     <div class="mb-6">
@@ -145,7 +113,6 @@
                         </div>
                         <div class="text-sm text-gray-500 mb-2">Question ${state.step} of ${questions.length}</div>
                     </div>
-
                     <div class="bg-white rounded-lg p-6 shadow-sm border">
                         <h2 class="text-xl font-semibold mb-2 text-gray-900">${q.question}</h2>
                         ${q.help ? `<p class="text-sm text-gray-500 mb-4">${q.help}</p>` : ''}
@@ -181,7 +148,6 @@
 
         function renderAssessment() {
             const estimatedLoss = state.data.ownsMasters && state.data.isComposer ? '€500-2000/year' : '€200-800/year';
-            
             return `
                 <div class="max-w-3xl mx-auto">
                     <div class="bg-red-50 border-2 border-red-200 rounded-lg p-4 mb-6">
@@ -197,17 +163,14 @@
                             </div>
                         </div>
                     </div>
-
                     <h2 class="text-2xl font-bold mb-4 text-gray-900">Your Rights Status</h2>
                     <p class="text-gray-600 mb-6">Based on your answers, here's what needs to be done:</p>
-
                     <div class="space-y-3">
                         ${renderStatus('missing', 'SABAM Writer Registration', 'high', 'Register as writer + publisher with SABAM before release')}
                         ${renderStatus('missing', 'Neighboring Rights (Performance)', 'high', 'Register with PlayRight (Belgium) for performer royalties')}
                         ${renderStatus('missing', 'ISRC Codes', 'medium', 'Generate ISRCs before uploading to distributor')}
                         ${renderStatus('partial', 'Metadata & Credits', 'medium', 'Prepare complete metadata (roles, splits, contributors)')}
                     </div>
-
                     <div class="mt-8 flex gap-3">
                         <button onclick="nextStep()" class="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition">
                             Start Fixing This
@@ -224,9 +187,7 @@
             const icon = status === 'missing' ? 
                 '<svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>' :
                 '<svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>';
-            
             const riskColor = risk === 'high' ? 'text-red-600' : 'text-yellow-600';
-            
             return `
                 <div class="border rounded-lg p-4 bg-white">
                     <div class="flex items-start gap-3">
@@ -265,7 +226,6 @@ ${state.data.artistName}`;
                 <div class="max-w-4xl mx-auto">
                     <h2 class="text-2xl font-bold mb-2 text-gray-900">Action Dashboard</h2>
                     <p class="text-gray-600 mb-6">Complete these in order. I've prepared everything for you.</p>
-
                     <div class="bg-white rounded-lg p-6 border">
                         <div class="flex items-start gap-3 mb-4 bg-blue-50 p-3 rounded">
                             <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -275,23 +235,18 @@ ${state.data.artistName}`;
                                 <strong>Priority: HIGH</strong> — Do this first. Takes 5 minutes.
                             </div>
                         </div>
-
                         <h3 class="font-semibold text-lg mb-3 text-gray-900">Step 1: Email SABAM</h3>
                         <p class="text-sm text-gray-600 mb-4">
                             Copy this email and send it to <strong>info@sabam.be</strong>
                         </p>
-
                         <div class="bg-gray-50 p-4 rounded border mb-4 font-mono text-sm whitespace-pre-wrap overflow-x-auto">${sabamEmail}</div>
-
                         <button onclick="copyEmail()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition">
                             Copy Email & Instructions
                         </button>
-
                         <div class="mt-4 text-sm text-gray-600 bg-yellow-50 p-3 rounded border border-yellow-200">
                             <strong>What happens next:</strong> SABAM will send you registration forms (1-2 days). Fill them out and return. You'll be registered within 2 weeks.
                         </div>
                     </div>
-
                     <div class="mt-6">
                         <button onclick="state.step = 0; render();" class="text-gray-600 hover:text-gray-900 font-medium">
                             ← Back to Start
@@ -304,6 +259,15 @@ ${state.data.artistName}`;
         function answer(value) {
             const q = questions[state.step - 1];
             state.data[q.field] = value;
+
+            // Persist answers to artistDB and LocalStorage
+            if (q.field === "artistName") artistDB.artist.name = value;
+            else if (q.field === "email") artistDB.artist.email = value;
+            else if (q.field === "ownsMasters") artistDB.artist.ownsMasters = value;
+            else if (q.field === "isComposer") artistDB.artist.isComposer = value;
+            else if (q.field === "releaseYears") artistDB.artist.releaseYears = value;
+            saveDB();
+
             nextStep();
         }
 
@@ -336,15 +300,18 @@ Could you please send me the registration forms and next steps?
 
 Thank you,
 ${state.data.artistName}`;
-
             navigator.clipboard.writeText(sabamEmail);
             alert('Email copied! Now paste it into your email client and send to info@sabam.be');
         }
 
-        // Start the app
-        state.step = 0;
+        // Prefill input fields after reload
+        function prefillInput(field) {
+            return state.data[field] || "";
+        }
+
+        // Start the app!
         render();
+
     </script>
 </body>
 </html>
-Add LocalStorage artistDB
