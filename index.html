@@ -10,17 +10,86 @@
     <div id="app" class="max-w-4xl mx-auto py-12"></div>
 
     <script>
-        // Simple vanilla JS version - no React complexity
-        const state = {
-            step: 1,
-            data: {
-                artistName: '',
-                email: '',
-                ownsMasters: null,
-                isComposer: null,
-                releaseYears: ''
+    // ---- 1. INIT ----
+    const STORAGE_KEY = "musicRightsAgentDB";
+    let artistDB = loadDB();
+
+    // ---- 2. SAVE & LOAD ----
+    function saveDB() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(artistDB));
+        // Debug: see result in console
+        console.log("artistDB (saved)", artistDB);
+    }
+    function loadDB() {
+        const data = localStorage.getItem(STORAGE_KEY);
+        if (data) {
+            try {
+                const parsed = JSON.parse(data);
+                // Debug: see loaded object
+                console.log("artistDB (loaded)", parsed);
+                return parsed;
+            } catch (e) {
+                console.warn("Failed to parse saved artistDB, starting fresh");
             }
+        }
+        // Default DB structure
+        return {
+            artist: {
+                name: "",
+                email: "",
+                country: "BE"
+            },
+            releases: [],
+            tracks: [],
+            persons: [],
+            contributions: []
         };
+    }
+
+    // ---- 3. HOOK INTO YOUR FLOW ----
+    // Your previous state/data logic replaced by artistDB.artist
+    // Update artistDB as user answers questions, then saveDB()
+
+    // Example: modify this logic to match your question flow
+    // The rest of your wizard should set artistDB.artist.name etc.
+
+    // Here’s a simple way to update artistDB from your existing answer() logic:
+    function answer(value) {
+        const q = questions[state.step - 1];
+        // Save the answer to artistDB
+        if (q.field === "artistName") artistDB.artist.name = value;
+        else if (q.field === "email") artistDB.artist.email = value;
+        else if (q.field === "ownsMasters") artistDB.artist.ownsMasters = value;
+        else if (q.field === "isComposer") artistDB.artist.isComposer = value;
+        else if (q.field === "releaseYears") artistDB.artist.releaseYears = value;
+        // ...add more mappings as you grow your DB structure
+
+        // Save to localStorage
+        saveDB();
+        nextStep();
+    }
+
+    // ---- 4. RESTORE ON LOAD ----
+    // When rendering questions, prefill inputs from artistDB if data exists
+
+    // Example (in your renderQuestion function, after you get q):
+    // value="${artistDB.artist.name || ''}"
+    // (Repeat for other fields as needed)
+
+    // ---- 5. CLEAR FUNCTION (optional for debugging) ----
+    function clearDB() {
+        localStorage.removeItem(STORAGE_KEY);
+        window.location.reload();
+    }
+
+    // ---- 6. INITIAL DEBUG LOG ----
+    console.log("artistDB (init)", artistDB);
+
+    // ---- 7. START THE APP AS BEFORE ----
+    state.step = 0;
+    render();
+</script>
+
 
         const questions = [
             { field: 'artistName', question: "What's your artist name?", type: 'text' },
