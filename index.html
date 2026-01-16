@@ -11,62 +11,28 @@
     <div class="fixed bottom-2 right-2">
         <button onclick="clearDB()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 text-xs">Clear Data</button>
     </div>
-
     <script>
-        // ---- LocalStorage Artist DB ----
         const STORAGE_KEY = "musicRightsAgentDB";
-        let artistDB = loadDB();
-
+        const STEP_KEY = "wizardStep";
         function saveDB() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(artistDB));
-            console.log("artistDB (saved)", artistDB);
         }
         function loadDB() {
             const data = localStorage.getItem(STORAGE_KEY);
             if (data) {
-                try {
-                    const parsed = JSON.parse(data);
-                    console.log("artistDB (loaded)", parsed);
-                    return parsed;
-                } catch (e) {
-                    console.warn("Failed to parse saved artistDB, starting fresh");
-                }
+                try { return JSON.parse(data); } catch (e) {}
             }
-            // Default DB structure
             return {
-                artist: {
-                    name: "",
-                    email: "",
-                    country: "BE"
-                },
-                releases: [],
-                tracks: [],
-                persons: [],
-                contributions: []
+                artist: { name: "", email: "", country: "BE", ownsMasters: null, isComposer: null, releaseYears: "" },
+                releases: [], tracks: [], persons: [], contributions: []
             };
         }
-       function clearDB() {
-    localStorage.removeItem(STORAGE_KEY);
-    clearStep();
-    window.location.reload();
-}
-
-        // ---- App State (Wizard Flow) ----
-        // ---- Wizard State (with resume support) ----
-const WIZARD_KEY = "wizardStep";
-
-const savedStep = parseInt(localStorage.getItem(WIZARD_KEY), 10);
-
-const state = {
-    step: Number.isInteger(savedStep) ? savedStep : 0,
-    data: {
-        artistName: artistDB.artist.name || "",
-        email: artistDB.artist.email || "",
-        ownsMasters: artistDB.artist.ownsMasters || null,
-        isComposer: artistDB.artist.isComposer || null,
-        releaseYears: artistDB.artist.releaseYears || ""
-    }
-};
+        function clearDB() {
+            localStorage.removeItem(STORAGE_KEY);
+            localStorage.removeItem(STEP_KEY);
+            window.location.reload();
+        }
+        let artistDB = loadDB();
 
         const questions = [
             { field: 'artistName', question: "What's your artist name?", type: 'text' },
@@ -76,17 +42,43 @@ const state = {
             { field: 'releaseYears', question: "When will you release (or when did you release)?", type: 'text', placeholder: "e.g. 2025, or 2023-2024" }
         ];
 
+        function allQuestionsAnswered() {
+            return (
+                artistDB.artist.name &&
+                artistDB.artist.email &&
+                artistDB.artist.ownsMasters !== null &&
+                artistDB.artist.isComposer !== null &&
+                artistDB.artist.releaseYears
+            );
+        }
+
+        function getStartStep() {
+            if (allQuestionsAnswered()) return questions.length + 1;
+            const saved = parseInt(localStorage.getItem(STEP_KEY), 10);
+            return Number.isInteger(saved) && saved >= 0 && saved <= questions.length + 1 ? saved : 0;
+        }
+
+        const state = {
+            step: getStartStep(),
+            data: {
+                artistName: artistDB.artist.name || "",
+                email: artistDB.artist.email || "",
+                ownsMasters: artistDB.artist.ownsMasters,
+                isComposer: artistDB.artist.isComposer,
+                releaseYears: artistDB.artist.releaseYears || ""
+            }
+        };
+
+        function saveStep() {
+            localStorage.setItem(STEP_KEY, state.step);
+        }
+
         function render() {
             const app = document.getElementById('app');
-            if (state.step === 0) {
-                app.innerHTML = renderWelcome();
-            } else if (state.step <= questions.length) {
-                app.innerHTML = renderQuestion();
-            } else if (state.step === questions.length + 1) {
-                app.innerHTML = renderAssessment();
-            } else {
-                app.innerHTML = renderActions();
-            }
+            if (state.step === 0) app.innerHTML = renderWelcome();
+            else if (state.step <= questions.length) app.innerHTML = renderQuestion();
+            else if (state.step === questions.length + 1) app.innerHTML = renderAssessment();
+            else app.innerHTML = renderActions();
         }
 
         function renderWelcome() {
@@ -109,6 +101,8 @@ const state = {
 
         function renderQuestion() {
             const q = questions[state.step - 1];
+            let val = state.data[q.field];
+            if (val === null || val === undefined) val = "";
             return `
                 <div class="max-w-xl mx-auto">
                     <div class="mb-6">
@@ -122,13 +116,12 @@ const state = {
                     <div class="bg-white rounded-lg p-6 shadow-sm border">
                         <h2 class="text-xl font-semibold mb-2 text-gray-900">${q.question}</h2>
                         ${q.help ? `<p class="text-sm text-gray-500 mb-4">${q.help}</p>` : ''}
-
                         ${q.type === 'boolean' ? `
                             <div class="flex gap-3">
-                                <button onclick="answer(true)" class="flex-1 py-3 px-4 border-2 border-gray-300 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition">
+                                <button onclick="answer(true)" class="flex-1 py-3 px-4 border-2 border-gray-300 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition"${val===true?" style='background:#e0e7ff;border-color:#2563eb'" : ""}>
                                     Yes
                                 </button>
-                                <button onclick="answer(false)" class="flex-1 py-3 px-4 border-2 border-gray-300 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition">
+                                <button onclick="answer(false)" class="flex-1 py-3 px-4 border-2 border-gray-300 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition"${val===false?" style='background:#e0e7ff;border-color:#2563eb'" : ""}>
                                     No
                                 </button>
                             </div>
@@ -139,7 +132,7 @@ const state = {
                                     id="input" 
                                     placeholder="${q.placeholder || ''}"
                                     class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
-                                    value="${state.data[q.field] || ''}"
+                                    value="${val}"
                                     onkeydown="if(event.key==='Enter' && this.value) answer(this.value)"
                                 >
                                 <button onclick="answerFromInput()" class="mt-3 w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition">
@@ -181,7 +174,7 @@ const state = {
                         <button onclick="nextStep()" class="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition">
                             Start Fixing This
                         </button>
-                        <button onclick="state.step = 0; render();" class="px-6 py-3 border-2 border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition">
+                        <button onclick="restartWizard()" class="px-6 py-3 border-2 border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition">
                             Start Over
                         </button>
                     </div>
@@ -227,7 +220,6 @@ Could you please send me the registration forms and next steps?
 
 Thank you,
 ${state.data.artistName}`;
-
             return `
                 <div class="max-w-4xl mx-auto">
                     <h2 class="text-2xl font-bold mb-2 text-gray-900">Action Dashboard</h2>
@@ -254,7 +246,7 @@ ${state.data.artistName}`;
                         </div>
                     </div>
                     <div class="mt-6">
-                        <button onclick="state.step = 0; render();" class="text-gray-600 hover:text-gray-900 font-medium">
+                        <button onclick="restartWizard()" class="text-gray-600 hover:text-gray-900 font-medium">
                             ← Back to Start
                         </button>
                     </div>
@@ -264,29 +256,36 @@ ${state.data.artistName}`;
 
         function answer(value) {
             const q = questions[state.step - 1];
-            state.data[q.field] = value;
-
-            // Persist answers to artistDB and LocalStorage
-            if (q.field === "artistName") artistDB.artist.name = value;
-            else if (q.field === "email") artistDB.artist.email = value;
-            else if (q.field === "ownsMasters") artistDB.artist.ownsMasters = value;
-            else if (q.field === "isComposer") artistDB.artist.isComposer = value;
-            else if (q.field === "releaseYears") artistDB.artist.releaseYears = value;
+            state.data[q.field] = q.type === "boolean" ? (value === true || value === "true") : value;
+            if (q.field === "artistName") artistDB.artist.name = state.data.artistName;
+            else if (q.field === "email") artistDB.artist.email = state.data.email;
+            else if (q.field === "ownsMasters") artistDB.artist.ownsMasters = state.data.ownsMasters;
+            else if (q.field === "isComposer") artistDB.artist.isComposer = state.data.isComposer;
+            else if (q.field === "releaseYears") artistDB.artist.releaseYears = state.data.releaseYears;
             saveDB();
-            function saveStep() {
-    localStorage.setItem(WIZARD_KEY, state.step);
-}
+            nextStep();
+        }
 
-function clearStep() {
-    localStorage.removeItem(WIZARD_KEY);
-}
+        function answerFromInput() {
+            const input = document.getElementById('input');
+            if (input && input.value) answer(input.value);
+        }
 
+        function nextStep() {
+            state.step++;
+            saveStep();
+            render();
+        }
 
-         function nextStep() {
-    state.step++;
-    saveStep();
-    render();
-}
+        function saveStep() {
+            localStorage.setItem(STEP_KEY, state.step);
+        }
+
+        function restartWizard() {
+            state.step = 1;
+            saveStep();
+            render();
+        }
 
         function copyEmail() {
             const sabamEmail = `Subject: SABAM Writer & Publisher Registration Request
@@ -309,14 +308,7 @@ ${state.data.artistName}`;
             alert('Email copied! Now paste it into your email client and send to info@sabam.be');
         }
 
-        // Prefill input fields after reload
-        function prefillInput(field) {
-            return state.data[field] || "";
-        }
-
-        // Start the app!
         render();
-
     </script>
 </body>
 </html>
