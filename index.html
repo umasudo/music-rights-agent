@@ -6,213 +6,422 @@
     <title>Music Rights Agent</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen p-6">
-    <div id="app" class="max-w-2xl mx-auto py-12"></div>
-    <div class="fixed bottom-2 right-2 z-10">
-        <button onclick="clearDB()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 text-xs">Clear Data</button>
-    </div>
-    <script>
-        // --- LocalStorage ---
-        const STORAGE_KEY = "musicRightsAgentDB";
-        function saveDB(db) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
-        }
-        function loadDB() {
-            const data = localStorage.getItem(STORAGE_KEY);
-            if (data) { try { return JSON.parse(data); } catch (e) {} }
-            return {
-                artist: { name: "", email: "", country: "BE", ownsMasters: null, isComposer: null, releaseYears: "" },
-                onboardingComplete: false,
-                extracted: false
-            };
-        }
-        function clearDB() {
-            localStorage.removeItem(STORAGE_KEY);
-            location.reload();
-        }
+<body class="bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen">
+    <div id="app" class="min-h-screen flex items-center justify-center p-6"></div>
 
-        // --- State ---
-        let db = loadDB();
+    <script>
+        // In-memory state (no localStorage needed)
+        const state = {
+            step: 'upload', // upload, processing, review, dashboard
+            artist: {
+                name: '',
+                email: '',
+                ownsMasters: null,
+                isComposer: null,
+                releaseYears: '',
+                tracks: []
+            },
+            uploadedText: ''
+        };
 
         function render() {
             const app = document.getElementById('app');
-            if (!db.artist.name || !db.artist.email || !db.extracted) {
-                app.innerHTML = renderOnboarding();
-            } else if (!db.onboardingComplete) {
+            
+            if (state.step === 'upload') {
+                app.innerHTML = renderUpload();
+            } else if (state.step === 'processing') {
+                app.innerHTML = renderProcessing();
+            } else if (state.step === 'review') {
                 app.innerHTML = renderReview();
-            } else {
+            } else if (state.step === 'dashboard') {
                 app.innerHTML = renderDashboard();
             }
         }
 
-        // --- Onboarding (minimal: name, email, upload/paste) ---
-        function renderOnboarding() {
+        function renderUpload() {
             return `
-                <div class="bg-white rounded-xl shadow-lg p-8">
-                    <h1 class="text-3xl font-bold mb-2 text-gray-900 text-center">Music Rights Agent</h1>
-                    <p class="text-lg text-gray-600 mb-8 text-center">Upload your credits/tracklist or paste them below. We'll fill in the rest.</p>
-                    <div class="space-y-4">
-                        <input type="text" id="artistName" class="w-full p-3 border-2 border-gray-200 rounded focus:border-blue-600" placeholder="Artist Name" value="${db.artist.name||''}">
-                        <input type="email" id="artistEmail" class="w-full p-3 border-2 border-gray-200 rounded focus:border-blue-600" placeholder="Email" value="${db.artist.email||''}">
-                        <label class="block font-medium text-gray-700 mt-6 mb-2">Upload credits file (.txt, .html) <span class="text-gray-400 font-normal">(optional)</span></label>
-                        <input type="file" id="fileUpload" accept=".txt,.html" class="mb-2">
-                        <label class="block font-medium text-gray-700 mt-6 mb-2">Or paste your credits / tracklist</label>
-                        <textarea id="pastedText" rows="5" class="w-full p-3 border-2 border-gray-200 rounded focus:border-blue-600" placeholder="Paste your tracklist, credits, or metadata here..."></textarea>
-                        <button onclick="extractMetadata()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition mt-6">
-                            Extract Info & Continue
+                <div class="max-w-2xl w-full">
+                    <div class="text-center mb-8">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                        </svg>
+                        <h1 class="text-4xl font-bold mb-2 text-gray-900">Music Rights Agent</h1>
+                        <p class="text-xl text-gray-600">Upload your tracklist and I'll handle the rest</p>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-xl p-8">
+                        <div 
+                            id="dropzone"
+                            class="border-3 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-blue-500 hover:bg-blue-50 transition cursor-pointer"
+                            ondrop="handleDrop(event)"
+                            ondragover="handleDragOver(event)"
+                            ondragleave="handleDragLeave(event)"
+                            onclick="document.getElementById('fileInput').click()"
+                        >
+                            <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            <p class="text-lg font-medium text-gray-700 mb-2">Drop your tracklist or credits file here</p>
+                            <p class="text-sm text-gray-500 mb-4">or click to browse</p>
+                            <p class="text-xs text-gray-400">Supports .txt, .pdf, .html, images with text</p>
+                            <input type="file" id="fileInput" class="hidden" accept=".txt,.pdf,.html,.jpg,.jpeg,.png" onchange="handleFile(event)">
+                        </div>
+
+                        <div class="relative my-6">
+                            <div class="absolute inset-0 flex items-center">
+                                <div class="w-full border-t border-gray-300"></div>
+                            </div>
+                            <div class="relative flex justify-center text-sm">
+                                <span class="px-4 bg-white text-gray-500">or paste your credits</span>
+                            </div>
+                        </div>
+
+                        <textarea 
+                            id="pasteArea"
+                            class="w-full p-4 border-2 border-gray-300 rounded-xl focus:border-blue-600 focus:outline-none resize-none"
+                            rows="6"
+                            placeholder="Paste your tracklist, credits, or metadata here...
+
+Example:
+Track 1: Song Title
+Written by: Your Name
+Produced by: Your Name
+Release: 2024"
+                            onpaste="setTimeout(() => handlePaste(), 100)"
+                        ></textarea>
+
+                        <button 
+                            onclick="processManualInput()"
+                            class="w-full mt-4 bg-blue-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-blue-700 transition shadow-lg"
+                        >
+                            Analyze My Credits
                         </button>
+                    </div>
+
+                    <div class="mt-6 text-center text-sm text-gray-500">
+                        <p>✓ Free assessment • ✓ Takes 2 minutes • ✓ EU-focused</p>
                     </div>
                 </div>
             `;
         }
 
-        // --- Extraction agent (placeholder for AI call) ---
-        async function extractMetadata() {
-            // Get base info
-            const name = document.getElementById('artistName').value.trim();
-            const email = document.getElementById('artistEmail').value.trim();
-            if (!name || !email) {
-                alert("Please enter your name and email.");
-                return;
-            }
-            db.artist.name = name;
-            db.artist.email = email;
-
-            // Get file (if any)
-            const fileInput = document.getElementById('fileUpload');
-            let creditsText = '';
-            if (fileInput.files && fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                creditsText = await file.text();
-            }
-            // Or pasted text
-            if (!creditsText) {
-                creditsText = document.getElementById('pastedText').value.trim();
-            }
-            // Fallback: empty, skip extraction (let user fill fields)
-            if (!creditsText) {
-                db.extracted = true;
-                saveDB(db);
-                render();
-                return;
-            }
-
-            // --- "AI" placeholder logic: crude extraction ---
-            // You should replace this block with an actual API/AI call!
-            // Simulate extraction by looking for keywords
-            function extractField(key, regex) {
-                const match = creditsText.match(regex);
-                return match ? match[1].trim() : "";
-            }
-            db.artist.releaseYears = extractField('releaseYears', /(20\d{2}(?:\s*[–-]\s*20\d{2})?)/) || db.artist.releaseYears || "";
-            db.artist.ownsMasters = /master/i.test(creditsText) || db.artist.ownsMasters;
-            db.artist.isComposer = /composer|lyrics|written by/i.test(creditsText) || db.artist.isComposer;
-
-            db.extracted = true;
-            saveDB(db);
-            render();
+        function renderProcessing() {
+            return `
+                <div class="max-w-2xl w-full bg-white rounded-2xl shadow-xl p-12 text-center">
+                    <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-6"></div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Analyzing your credits...</h2>
+                    <p class="text-gray-600">Extracting ownership info, roles, and metadata</p>
+                </div>
+            `;
         }
 
-        // --- Review/Edit Extracted Metadata ---
         function renderReview() {
-            const ownsMastersYes = db.artist.ownsMasters === true || db.artist.ownsMasters === "true";
-            const ownsMastersNo = db.artist.ownsMasters === false || db.artist.ownsMasters === "false";
-            const isComposerYes = db.artist.isComposer === true || db.artist.isComposer === "true";
-            const isComposerNo = db.artist.isComposer === false || db.artist.isComposer === "false";
+            const ownsMastersYes = state.artist.ownsMasters === true;
+            const ownsMastersNo = state.artist.ownsMasters === false;
+            const isComposerYes = state.artist.isComposer === true;
+            const isComposerNo = state.artist.isComposer === false;
+
             return `
-                <div class="bg-white rounded-xl shadow-lg p-8">
-                    <h2 class="text-2xl font-bold mb-4 text-gray-900">Review & Complete Info</h2>
-                    <div class="space-y-4">
-                        <input type="text" id="artistNameReview" class="w-full p-3 border-2 border-gray-200 rounded focus:border-blue-600" placeholder="Artist Name" value="${db.artist.name||''}">
-                        <input type="email" id="artistEmailReview" class="w-full p-3 border-2 border-gray-200 rounded focus:border-blue-600" placeholder="Email" value="${db.artist.email||''}">
+                <div class="max-w-3xl w-full bg-white rounded-2xl shadow-xl p-8">
+                    <div class="mb-8">
+                        <h2 class="text-3xl font-bold text-gray-900 mb-2">Review Extracted Info</h2>
+                        <p class="text-gray-600">I've analyzed your credits. Please verify and complete:</p>
+                    </div>
+
+                    <div class="space-y-6">
                         <div>
-                            <label class="font-medium text-gray-700 block mb-2">Do you own the master recordings?</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Artist Name</label>
+                            <input 
+                                type="text" 
+                                id="artistName"
+                                value="${state.artist.name}"
+                                class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                                placeholder="Your artist name"
+                            >
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <input 
+                                type="email" 
+                                id="artistEmail"
+                                value="${state.artist.email}"
+                                class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                                placeholder="your@email.com"
+                            >
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-3">Do you own the master recordings?</label>
                             <div class="flex gap-3">
-                                <button onclick="setMasters(true)" class="flex-1 py-3 px-4 border-2 rounded-lg ${ownsMastersYes ? 'border-blue-600 bg-blue-50' : 'border-gray-200'}">Yes</button>
-                                <button onclick="setMasters(false)" class="flex-1 py-3 px-4 border-2 rounded-lg ${ownsMastersNo ? 'border-blue-600 bg-blue-50' : 'border-gray-200'}">No</button>
+                                <button 
+                                    onclick="updateField('ownsMasters', true)"
+                                    class="flex-1 py-3 px-4 border-2 rounded-lg font-medium transition ${ownsMastersYes ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:border-gray-400'}"
+                                >
+                                    ✓ Yes, I own them
+                                </button>
+                                <button 
+                                    onclick="updateField('ownsMasters', false)"
+                                    class="flex-1 py-3 px-4 border-2 rounded-lg font-medium transition ${ownsMastersNo ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:border-gray-400'}"
+                                >
+                                    ✗ No, label owns
+                                </button>
                             </div>
                         </div>
+
                         <div>
-                            <label class="font-medium text-gray-700 block mb-2">Did you write the music and lyrics?</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-3">Did you write the music and lyrics?</label>
                             <div class="flex gap-3">
-                                <button onclick="setComposer(true)" class="flex-1 py-3 px-4 border-2 rounded-lg ${isComposerYes ? 'border-blue-600 bg-blue-50' : 'border-gray-200'}">Yes</button>
-                                <button onclick="setComposer(false)" class="flex-1 py-3 px-4 border-2 rounded-lg ${isComposerNo ? 'border-blue-600 bg-blue-50' : 'border-gray-200'}">No</button>
+                                <button 
+                                    onclick="updateField('isComposer', true)"
+                                    class="flex-1 py-3 px-4 border-2 rounded-lg font-medium transition ${isComposerYes ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:border-gray-400'}"
+                                >
+                                    ✓ Yes, I wrote it
+                                </button>
+                                <button 
+                                    onclick="updateField('isComposer', false)"
+                                    class="flex-1 py-3 px-4 border-2 rounded-lg font-medium transition ${isComposerNo ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:border-gray-400'}"
+                                >
+                                    ✗ No, co-written
+                                </button>
                             </div>
                         </div>
-                        <input type="text" id="releaseYearsReview" class="w-full p-3 border-2 border-gray-200 rounded focus:border-blue-600" placeholder="Release Years (e.g. 2021, or 2019–2021)" value="${db.artist.releaseYears||''}">
-                        <button onclick="finalizeOnboarding()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition mt-6">
-                            Save & Go to Dashboard
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Release Year(s)</label>
+                            <input 
+                                type="text" 
+                                id="releaseYears"
+                                value="${state.artist.releaseYears}"
+                                class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                                placeholder="e.g. 2024 or 2023-2024"
+                            >
+                        </div>
+
+                        ${state.artist.tracks.length > 0 ? `
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <div class="font-medium text-gray-900 mb-2">Detected Tracks:</div>
+                                <ul class="text-sm text-gray-700 space-y-1">
+                                    ${state.artist.tracks.slice(0, 5).map(t => `<li>• ${t}</li>`).join('')}
+                                    ${state.artist.tracks.length > 5 ? `<li class="text-gray-500">...and ${state.artist.tracks.length - 5} more</li>` : ''}
+                                </ul>
+                            </div>
+                        ` : ''}
+
+                        <button 
+                            onclick="finalize()"
+                            class="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-blue-700 transition shadow-lg mt-8"
+                        >
+                            Continue to Dashboard →
                         </button>
                     </div>
                 </div>
             `;
         }
 
-        function setMasters(val) {
-            db.artist.ownsMasters = val;
-            saveDB(db);
-            render();
-        }
-        function setComposer(val) {
-            db.artist.isComposer = val;
-            saveDB(db);
-            render();
-        }
-        function finalizeOnboarding() {
-            db.artist.name = document.getElementById('artistNameReview').value.trim();
-            db.artist.email = document.getElementById('artistEmailReview').value.trim();
-            db.artist.releaseYears = document.getElementById('releaseYearsReview').value.trim();
-            db.onboardingComplete = true;
-            saveDB(db);
-            render();
-        }
-
-        // --- Dashboard (after onboarding) ---
         function renderDashboard() {
+            const estimatedLoss = state.artist.ownsMasters && state.artist.isComposer ? '€500-2000/year' : '€200-800/year';
+
             return `
-                <div class="bg-white rounded-xl shadow-lg p-8">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold text-gray-900">Welcome, ${db.artist.name}</h2>
-                        <button onclick="editOnboarding()" class="text-blue-600 hover:underline font-medium text-sm">Edit details</button>
+                <div class="max-w-4xl w-full">
+                    <div class="bg-white rounded-2xl shadow-xl p-8 mb-6">
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <h2 class="text-3xl font-bold text-gray-900 mb-1">Welcome, ${state.artist.name}</h2>
+                                <p class="text-gray-600">${state.artist.email}</p>
+                            </div>
+                            <button onclick="state.step = 'review'; render();" class="text-blue-600 hover:underline font-medium text-sm">
+                                Edit Info
+                            </button>
+                        </div>
+
+                        <div class="bg-red-50 border-2 border-red-200 rounded-xl p-6 mb-8">
+                            <div class="flex items-start gap-4">
+                                <svg class="w-8 h-8 text-red-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                <div>
+                                    <div class="font-bold text-red-900 text-lg mb-1">You're losing money right now</div>
+                                    <div class="text-red-800">
+                                        Without proper registration, you could be losing <strong>${estimatedLoss}</strong> per release in unclaimed royalties.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">Your Rights Status</h3>
+                        
+                        <div class="space-y-3 mb-8">
+                            ${renderStatusCard('missing', 'SABAM Writer Registration', 'high', 'Register as writer + publisher with SABAM')}
+                            ${renderStatusCard('missing', 'Neighboring Rights', 'high', 'Register with PlayRight for performer royalties')}
+                            ${renderStatusCard('missing', 'ISRC Codes', 'medium', 'Generate ISRCs before distribution')}
+                            ${renderStatusCard('partial', 'Metadata Complete', 'medium', 'Verify all credits and splits')}
+                        </div>
+
+                        <button 
+                            onclick="copySabamEmail()"
+                            class="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-blue-700 transition shadow-lg mb-4"
+                        >
+                            📧 Copy SABAM Registration Email
+                        </button>
+
+                        <div class="text-center text-sm text-gray-500">
+                            <p>Want me to handle this automatically? <span class="font-medium text-blue-600">Premium automation coming soon</span></p>
+                        </div>
                     </div>
-                    <div class="mb-4 text-gray-700">
-                        <div><strong>Email:</strong> ${db.artist.email}</div>
-                        <div><strong>Owns Masters:</strong> ${db.artist.ownsMasters === true || db.artist.ownsMasters === "true" ? 'Yes' : db.artist.ownsMasters === false || db.artist.ownsMasters === "false" ? 'No' : ''}</div>
-                        <div><strong>Composer:</strong> ${db.artist.isComposer === true || db.artist.isComposer === "true" ? 'Yes' : db.artist.isComposer === false || db.artist.isComposer === "false" ? 'No' : ''}</div>
-                        <div><strong>Release Years:</strong> ${db.artist.releaseYears||''}</div>
-                    </div>
-                    <div class="bg-blue-50 p-4 rounded border border-blue-200 mb-6">
-                        <div class="font-semibold mb-2">Your Rights Status</div>
-                        <ul class="list-disc ml-6 text-gray-700 text-sm space-y-1">
-                            <li>Register as writer + publisher with SABAM before release</li>
-                            <li>Register with PlayRight (Belgium) for performer royalties</li>
-                            <li>Generate ISRCs before uploading to distributor</li>
-                            <li>Prepare complete metadata (roles, splits, contributors)</li>
-                        </ul>
-                    </div>
-                    <button onclick="copySabamEmail()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition mb-2">
-                        Copy SABAM Registration Email
+
+                    <button onclick="state.step = 'upload'; state.artist = {name:'',email:'',ownsMasters:null,isComposer:null,releaseYears:'',tracks:[]}; render();" class="text-gray-600 hover:text-gray-900 font-medium">
+                        ← Start Over
                     </button>
-                    <div class="mt-2 text-sm text-gray-500">Ready to automate more? <span class="font-medium text-blue-700">Upgrade for full agent support (coming soon)</span></div>
                 </div>
             `;
         }
 
-        function editOnboarding() {
-            db.onboardingComplete = false;
-            saveDB(db);
+        function renderStatusCard(status, label, risk, action) {
+            const icon = status === 'missing' ? 
+                '<svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>' :
+                '<svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>';
+            
+            const riskColor = risk === 'high' ? 'text-red-600' : 'text-yellow-600';
+            
+            return `
+                <div class="border-2 border-gray-200 rounded-xl p-4 hover:border-blue-300 transition">
+                    <div class="flex items-start gap-4">
+                        ${icon}
+                        <div class="flex-1">
+                            <div class="font-semibold text-gray-900 text-lg">${label}</div>
+                            <div class="text-sm mt-1 font-semibold ${riskColor}">Risk: ${risk.toUpperCase()}</div>
+                            <div class="mt-2 text-sm text-gray-700 bg-blue-50 p-3 rounded-lg">
+                                <strong>Next step:</strong> ${action}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- File handling ---
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('dropzone').classList.add('border-blue-500', 'bg-blue-50');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('dropzone').classList.remove('border-blue-500', 'bg-blue-50');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('dropzone').classList.remove('border-blue-500', 'bg-blue-50');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        }
+
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (file) {
+                processFile(file);
+            }
+        }
+
+        function handlePaste() {
+            const text = document.getElementById('pasteArea').value;
+            if (text.trim()) {
+                processText(text);
+            }
+        }
+
+        function processManualInput() {
+            const text = document.getElementById('pasteArea').value.trim();
+            if (!text) {
+                alert('Please paste your credits or upload a file first');
+                return;
+            }
+            processText(text);
+        }
+
+        async function processFile(file) {
+            state.step = 'processing';
+            render();
+
+            const text = await file.text();
+            
+            setTimeout(() => {
+                processText(text);
+            }, 1500); // Simulate processing time
+        }
+
+        function processText(text) {
+            state.uploadedText = text;
+            
+            // Simple extraction logic (replace with AI later)
+            const lines = text.split('\n');
+            
+            // Extract artist name
+            const artistMatch = text.match(/(?:artist|by|name)[\s:]+([^\n,]+)/i);
+            if (artistMatch) state.artist.name = artistMatch[1].trim();
+            
+            // Extract email
+            const emailMatch = text.match(/[\w.-]+@[\w.-]+\.\w+/);
+            if (emailMatch) state.artist.email = emailMatch[0];
+            
+            // Extract year
+            const yearMatch = text.match(/(20\d{2}(?:\s*[-–]\s*20\d{2})?)/);
+            if (yearMatch) state.artist.releaseYears = yearMatch[1];
+            
+            // Detect ownership keywords
+            if (/(?:own|produced by|master)/i.test(text)) {
+                state.artist.ownsMasters = true;
+            }
+            if (/(?:written by|composed by|lyrics|composer)/i.test(text)) {
+                state.artist.isComposer = true;
+            }
+            
+            // Extract track titles
+            state.artist.tracks = lines
+                .filter(line => /^(?:\d+[\.\):]|\-|•|track)/i.test(line.trim()))
+                .map(line => line.replace(/^(?:\d+[\.\):]|\-|•|track)\s*/i, '').trim())
+                .filter(t => t.length > 0 && t.length < 100);
+            
+            state.step = 'review';
+            render();
+        }
+
+        function updateField(field, value) {
+            state.artist[field] = value;
+            render();
+        }
+
+        function finalize() {
+            state.artist.name = document.getElementById('artistName').value.trim();
+            state.artist.email = document.getElementById('artistEmail').value.trim();
+            state.artist.releaseYears = document.getElementById('releaseYears').value.trim();
+            
+            if (!state.artist.name || !state.artist.email) {
+                alert('Please fill in your name and email');
+                return;
+            }
+            
+            state.step = 'dashboard';
             render();
         }
 
         function copySabamEmail() {
-            const sabamEmail = `Subject: SABAM Writer & Publisher Registration Request
+            const email = `Subject: SABAM Writer & Publisher Registration Request
 
 Dear SABAM,
 
 I am an independent musician based in Belgium and would like to register as both a writer and publisher.
 
-Artist Name: ${db.artist.name}
-Email: ${db.artist.email}
+Artist Name: ${state.artist.name}
+Email: ${state.artist.email}
 Role: Composer, Lyricist, Producer, Performer
 
 I own 100% of my master recordings and compositions for upcoming releases.
@@ -220,11 +429,13 @@ I own 100% of my master recordings and compositions for upcoming releases.
 Could you please send me the registration forms and next steps?
 
 Thank you,
-${db.artist.name}`;
-            navigator.clipboard.writeText(sabamEmail);
-            alert('Email copied! Now paste it into your email client and send to info@sabam.be');
+${state.artist.name}`;
+
+            navigator.clipboard.writeText(email);
+            alert('✓ Email copied! Paste it into your email client and send to info@sabam.be');
         }
 
+        // Start app
         render();
     </script>
 </body>
