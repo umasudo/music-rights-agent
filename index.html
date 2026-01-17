@@ -135,6 +135,7 @@ Release: 2024"
                                 type="text" 
                                 id="artistName"
                                 value="${state.artist.name}"
+                                oninput="state.artist.name = this.value"
                                 class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
                                 placeholder="Your artist name"
                             >
@@ -146,6 +147,7 @@ Release: 2024"
                                 type="email" 
                                 id="artistEmail"
                                 value="${state.artist.email}"
+                                oninput="state.artist.email = this.value"
                                 class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
                                 placeholder="your@email.com"
                             >
@@ -193,6 +195,7 @@ Release: 2024"
                                 type="text" 
                                 id="releaseYears"
                                 value="${state.artist.releaseYears}"
+                                oninput="state.artist.releaseYears = this.value"
                                 class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
                                 placeholder="e.g. 2024 or 2023-2024"
                             >
@@ -492,10 +495,7 @@ Release: 2024"
         }
 
         function finalize() {
-            state.artist.name = document.getElementById('artistName').value.trim();
-            state.artist.email = document.getElementById('artistEmail').value.trim();
-            state.artist.releaseYears = document.getElementById('releaseYears').value.trim();
-            
+            // Values are already in state from oninput handlers
             if (!state.artist.name || !state.artist.email) {
                 alert('Please fill in your name and email');
                 return;
