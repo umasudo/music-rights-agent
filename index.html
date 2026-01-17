@@ -19,6 +19,7 @@
                 ownsMasters: null,
                 isComposer: null,
                 releaseYears: '',
+                hasPastReleases: false,
                 tracks: []
             },
             uploadedText: ''
@@ -201,6 +202,22 @@ Release: 2024"
                             >
                         </div>
 
+                        <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                            <label class="flex items-start gap-3 cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    id="hasPastReleases"
+                                    ${state.artist.hasPastReleases ? 'checked' : ''}
+                                    onchange="state.artist.hasPastReleases = this.checked; render();"
+                                    class="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                >
+                                <div class="flex-1">
+                                    <div class="font-medium text-gray-900">I have past releases I want to claim royalties for</div>
+                                    <div class="text-sm text-gray-600 mt-1">You may be able to claim retroactive royalties for releases from previous years (typically up to 3-5 years back)</div>
+                                </div>
+                            </label>
+                        </div>
+
                         ${state.artist.tracks.length > 0 ? `
                             <div class="bg-gray-50 rounded-lg p-4">
                                 <div class="font-medium text-gray-900 mb-2">Detected Tracks:</div>
@@ -244,7 +261,7 @@ Release: 2024"
                                 <div>
                                     <div class="font-bold text-blue-900 text-lg mb-1">Registration Status</div>
                                     <div class="text-blue-800">
-                                        Independent artists often miss royalties from streaming, radio, and public performances because they haven't registered with collection societies. Let's get you set up.
+                                        Independent artists often miss royalties from streaming, radio, and public performances because they haven't registered with collection societies. Let's get you set up.${state.artist.hasPastReleases ? ' <strong>Note:</strong> You may be able to claim retroactive royalties for your past releases.' : ''}
                                     </div>
                                 </div>
                             </div>
@@ -283,7 +300,7 @@ Release: 2024"
                                             </button>
                                         </div>
                                         <div class="mt-3 text-sm text-gray-600 bg-white p-3 rounded border">
-                                            <strong>What to do:</strong> Copy the email, send it to info@sabam.be, then wait 1-2 days for their registration forms.
+                                            <strong>What to do:</strong> Copy the email, send it to info@sabam.be, then wait 1-2 days for their registration forms.${state.artist.hasPastReleases ? ' <strong>Mention your past releases</strong> to inquire about retroactive royalties.' : ''}
                                         </div>
                                     </div>
                                 </div>
@@ -363,12 +380,50 @@ Release: 2024"
                                         <div class="flex justify-between items-start mb-2">
                                             <div>
                                                 <h4 class="font-bold text-gray-900 text-lg">Document Your Metadata</h4>
-                                                <p class="text-sm text-gray-600 mt-1">Keep a master list of all credits, roles, and ownership splits</p>
-                                                <span class="inline-block mt-2 text-xs font-semibold text-gray-700 bg-gray-200 px-2 py-1 rounded">⏱ 15 minutes</span>
+                                                <p class="text-sm text-gray-600 mt-1">Keep a master record of all your release info</p>
+                                                <span class="inline-block mt-2 text-xs font-semibold text-gray-700 bg-gray-200 px-2 py-1 rounded">⏱ 5 minutes</span>
                                             </div>
                                         </div>
-                                        <div class="mt-3 text-sm text-gray-600 bg-gray-50 p-3 rounded border">
-                                            <strong>Why this matters:</strong> You'll need this info for every registration, distributor, and royalty claim. Having it organized saves hours of work later.
+                                        
+                                        <div class="mt-3 bg-gray-50 border-2 border-gray-200 rounded-lg p-4">
+                                            <div class="font-medium text-gray-900 mb-3">📋 Your Extracted Metadata:</div>
+                                            
+                                            <div class="space-y-2 text-sm">
+                                                <div><strong>Artist:</strong> ${state.artist.name}</div>
+                                                <div><strong>Email:</strong> ${state.artist.email}</div>
+                                                ${state.artist.releaseYears ? `<div><strong>Release Year:</strong> ${state.artist.releaseYears}</div>` : ''}
+                                                
+                                                <div class="pt-2 border-t border-gray-300 mt-2">
+                                                    <strong>Ownership:</strong>
+                                                    <div class="ml-4 mt-1">
+                                                        ${state.artist.ownsMasters === true ? '✓ Masters: You own them' : state.artist.ownsMasters === false ? '✗ Masters: Label owns' : ''}
+                                                    </div>
+                                                    <div class="ml-4">
+                                                        ${state.artist.isComposer === true ? '✓ Composition: You wrote it' : state.artist.isComposer === false ? '✗ Composition: Co-written' : ''}
+                                                    </div>
+                                                </div>
+                                                
+                                                ${state.artist.tracks.length > 0 ? `
+                                                    <div class="pt-2 border-t border-gray-300 mt-2">
+                                                        <strong>Tracks (${state.artist.tracks.length}):</strong>
+                                                        <ul class="ml-4 mt-1 space-y-1">
+                                                            ${state.artist.tracks.slice(0, 10).map((t, i) => `<li>${i + 1}. ${t}</li>`).join('')}
+                                                            ${state.artist.tracks.length > 10 ? `<li class="text-gray-500">...and ${state.artist.tracks.length - 10} more</li>` : ''}
+                                                        </ul>
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                            
+                                            <button 
+                                                onclick="copyMetadata()"
+                                                class="w-full mt-4 bg-gray-700 text-white py-2 px-4 rounded-lg font-medium hover:bg-gray-800 transition text-sm"
+                                            >
+                                                📋 Copy All Metadata
+                                            </button>
+                                        </div>
+                                        
+                                        <div class="mt-3 text-sm text-gray-600 bg-white p-3 rounded border">
+                                            <strong>Why this matters:</strong> You'll need this info for every registration, distributor, and royalty claim. Keep it safe and up to date.
                                         </div>
                                     </div>
                                 </div>
@@ -546,6 +601,27 @@ ${state.artist.name}`;
 
             navigator.clipboard.writeText(email);
             alert('✓ Email copied! Paste it into your email client and send to info@playright.be');
+        }
+
+        function copyMetadata() {
+            const tracks = state.artist.tracks.length > 0 
+                ? `\n\nTracks (${state.artist.tracks.length}):\n${state.artist.tracks.map((t, i) => `${i + 1}. ${t}`).join('\n')}`
+                : '';
+            
+            const ownership = `\n\nOwnership:\n${state.artist.ownsMasters === true ? '✓ Masters: You own them' : state.artist.ownsMasters === false ? '✗ Masters: Label owns' : 'Masters: Not specified'}\n${state.artist.isComposer === true ? '✓ Composition: You wrote it' : state.artist.isComposer === false ? '✗ Composition: Co-written' : 'Composition: Not specified'}`;
+            
+            const metadata = `MUSIC METADATA RECORD
+Generated: ${new Date().toLocaleDateString()}
+
+Artist: ${state.artist.name}
+Email: ${state.artist.email}
+Release Year: ${state.artist.releaseYears || 'Not specified'}${ownership}${tracks}
+
+---
+Keep this record updated for all registrations and distributions.`;
+
+            navigator.clipboard.writeText(metadata);
+            alert('✓ Metadata copied to clipboard! Paste it into a text file or document to save.');
         }
 
         render();
