@@ -22,6 +22,7 @@
                 hasPastReleases: false,
                 tracks: []
             },
+            conflicts: null,
             uploadedText: ''
         };
 
@@ -130,6 +131,30 @@ Release: 2024"
                     </div>
 
                     <div class="space-y-6">
+                        ${state.conflicts && (state.conflicts.clarifications.length > 0 || state.conflicts.errors.length > 0 || state.conflicts.masterNotes || state.conflicts.compositionNotes) ? `
+                            <div class="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 mb-6">
+                                <div class="font-semibold text-yellow-900 mb-2">⚠️ Extraction Notes</div>
+                                ${state.conflicts.masterNotes ? `<div class="text-sm text-yellow-800 mb-2"><strong>Master ownership:</strong> ${state.conflicts.masterNotes}</div>` : ''}
+                                ${state.conflicts.compositionNotes ? `<div class="text-sm text-yellow-800 mb-2"><strong>Composition:</strong> ${state.conflicts.compositionNotes}</div>` : ''}
+                                ${state.conflicts.clarifications.length > 0 ? `
+                                    <div class="text-sm text-yellow-800 mt-3">
+                                        <strong>Please clarify:</strong>
+                                        <ul class="list-disc ml-5 mt-1">
+                                            ${state.conflicts.clarifications.map(q => `<li>${q}</li>`).join('')}
+                                        </ul>
+                                    </div>
+                                ` : ''}
+                                ${state.conflicts.errors.length > 0 ? `
+                                    <div class="text-sm text-yellow-800 mt-3">
+                                        <strong>Parsing issues:</strong>
+                                        <ul class="list-disc ml-5 mt-1">
+                                            ${state.conflicts.errors.map(e => `<li>${e}</li>`).join('')}
+                                        </ul>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Artist Name</label>
                             <input 
@@ -574,17 +599,49 @@ Release: 2024"
                 const result = await response.json();
 
                 if (result.success && result.metadata) {
-                    // Use Claude-extracted metadata
-                    state.artist.name = result.metadata.artistName || '';
-                    state.artist.email = result.metadata.email || '';
-                    state.artist.releaseYears = result.metadata.releaseYears || '';
-                    state.artist.ownsMasters = result.metadata.ownsMasters;
-                    state.artist.isComposer = result.metadata.isComposer;
-                    state.artist.tracks = result.metadata.tracks || [];
-                    state.uploadedText = result.metadata.notes || '';
+                    const meta = result.metadata;
+                    
+                    // Basic artist info
+                    state.artist.name = meta.artist?.name || '';
+                    state.artist.email = meta.artist?.email || '';
+                    
+                    // Handle releases (take first one for now, or combine)
+                    if (meta.releases && meta.releases.length > 0) {
+                        const firstRelease = meta.releases[0];
+                        state.artist.releaseYears = firstRelease.year || '';
+                        state.artist.tracks = firstRelease.tracks || [];
+                    }
+                    
+                    // Handle rights with conflicts
+                    if (meta.rights) {
+                        if (meta.rights.masterOwnership === 'OWNS') {
+                            state.artist.ownsMasters = true;
+                        } else if (meta.rights.masterOwnership === 'DOES_NOT_OWN') {
+                            state.artist.ownsMasters = false;
+                        } else {
+                            state.artist.ownsMasters = null; // Unknown or conflicted
+                        }
+                        
+                        if (meta.rights.composition === 'SOLE') {
+                            state.artist.isComposer = true;
+                        } else if (meta.rights.composition === 'CO_WRITTEN') {
+                            state.artist.isComposer = false;
+                        } else {
+                            state.artist.isComposer = null; // Unknown or conflicted
+                        }
+                    }
+                    
+                    // Store conflicts and clarifications for review page
+                    state.conflicts = {
+                        masterNotes: meta.rights?.masterOwnershipNotes || '',
+                        compositionNotes: meta.rights?.compositionNotes || '',
+                        clarifications: meta.clarificationNeeded || [],
+                        errors: meta.parsingErrors || []
+                    };
                 } else {
                     // Fallback to regex extraction
                     processTextFallback(fileType === 'text' ? fileData : '');
+                    state.conflicts = null;
                 }
 
                 state.step = 'review';
