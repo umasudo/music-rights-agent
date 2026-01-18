@@ -1,17 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Privacy-friendly analytics by Plausible -->
-<script async src="https://plausible.io/js/pa-hC08Vi8gxnuc3d9iH9bUf.js"></script>
-<script>
-  window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
-  plausible.init()
-</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Music Rights Agent</title>
     <script src="https://cdn.tailwindcss.com"></script>
-
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen">
     <div id="app" class="min-h-screen flex items-center justify-center p-6"></div>
@@ -72,7 +65,7 @@
                             <p class="text-lg font-medium text-gray-700 mb-2">Drop your tracklist or credits file here</p>
                             <p class="text-sm text-gray-500 mb-4">or click to browse</p>
                             <p class="text-xs text-gray-400">Supports .txt, .pdf, .html, images with text</p>
-                            <input type="file" id="fileInput" class="hidden" accept=".txt,.pdf,.html,.jpg,.jpeg,.png" onchange="handleFile(event)">
+                            <input type="file" id="fileInput" class="hidden" accept=".txt,.pdf,.html,.jpg,.jpeg,.png,.heic" onchange="handleFile(event)">
                         </div>
 
                         <div class="relative my-6">
@@ -507,21 +500,122 @@ Release: 2024"
                 alert('Please paste your credits or upload a file first');
                 return;
             }
-            processText(text);
+            
+            state.step = 'processing';
+            render();
+            
+            // Call API for pasted text too
+            setTimeout(async () => {
+                try {
+                    const response = await fetch('/api/extract', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            fileData: text,
+                            fileType: 'text',
+                            fileName: 'pasted-text.txt'
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success && result.metadata) {
+                        state.artist.name = result.metadata.artistName || '';
+                        state.artist.email = result.metadata.email || '';
+                        state.artist.releaseYears = result.metadata.releaseYears || '';
+                        state.artist.ownsMasters = result.metadata.ownsMasters;
+                        state.artist.isComposer = result.metadata.isComposer;
+                        state.artist.tracks = result.metadata.tracks || [];
+                        state.uploadedText = result.metadata.notes || '';
+                    } else {
+                        processTextFallback(text);
+                    }
+                } catch (error) {
+                    console.error('API error:', error);
+                    processTextFallback(text);
+                }
+                
+                state.step = 'review';
+                render();
+            }, 1000);
         }
 
         async function processFile(file) {
             state.step = 'processing';
             render();
 
-            const text = await file.text();
-            
-            setTimeout(() => {
-                processText(text);
-            }, 1500);
+            try {
+                let fileData;
+                let fileType;
+
+                // Handle different file types
+                if (file.type.startsWith('image/')) {
+                    // Convert image to base64
+                    fileData = await fileToBase64(file);
+                    fileType = 'image';
+                } else if (file.type === 'application/pdf') {
+                    // Convert PDF to base64
+                    fileData = await fileToBase64(file);
+                    fileType = 'pdf';
+                } else {
+                    // Text file
+                    fileData = await file.text();
+                    fileType = 'text';
+                }
+
+                // Call Vercel API for extraction
+                const response = await fetch('/api/extract', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fileData: fileType === 'text' ? fileData : fileData.split(',')[1], // Remove data:image/jpeg;base64, prefix
+                        fileType: fileType,
+                        fileName: file.name
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success && result.metadata) {
+                    // Use AI-extracted metadata
+                    state.artist.name = result.metadata.artistName || '';
+                    state.artist.email = result.metadata.email || '';
+                    state.artist.releaseYears = result.metadata.releaseYears || '';
+                    state.artist.ownsMasters = result.metadata.ownsMasters;
+                    state.artist.isComposer = result.metadata.isComposer;
+                    state.artist.tracks = result.metadata.tracks || [];
+                    state.uploadedText = result.metadata.notes || '';
+                } else if (result.fallback) {
+                    // Fallback to basic extraction
+                    const text = fileType === 'text' ? fileData : '';
+                    processTextFallback(text);
+                }
+
+                state.step = 'review';
+                render();
+            } catch (error) {
+                console.error('Processing error:', error);
+                // Fallback to manual entry
+                alert('Could not extract data automatically. Please fill in the form manually.');
+                state.step = 'review';
+                render();
+            }
         }
 
-        function processText(text) {
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function processTextFallback(text) {
             state.uploadedText = text;
             
             const lines = text.split('\n');
@@ -546,7 +640,11 @@ Release: 2024"
                 .filter(line => /^(?:\d+[\.\):]|\-|•|track)/i.test(line.trim()))
                 .map(line => line.replace(/^(?:\d+[\.\):]|\-|•|track)\s*/i, '').trim())
                 .filter(t => t.length > 0 && t.length < 100);
-            
+        }
+
+        function processText(text) {
+            // This is now the fallback - renamed to processTextFallback and called from processFile
+            processTextFallback(text);
             state.step = 'review';
             render();
         }
