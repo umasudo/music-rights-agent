@@ -494,7 +494,7 @@ Release: 2024"
             }
         }
 
-        function processManualInput() {
+        async function processManualInput() {
             const text = document.getElementById('pasteArea').value.trim();
             if (!text) {
                 alert('Please paste your credits or upload a file first');
@@ -504,42 +504,40 @@ Release: 2024"
             state.step = 'processing';
             render();
             
-            // Call API for pasted text too
-            setTimeout(async () => {
-                try {
-                    const response = await fetch('/api/extract', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            fileData: text,
-                            fileType: 'text',
-                            fileName: 'pasted-text.txt'
-                        })
-                    });
+            try {
+                // Call API for pasted text
+                const response = await fetch('/api/extract', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fileData: text,
+                        fileType: 'text',
+                        fileName: 'pasted-text.txt'
+                    })
+                });
 
-                    const result = await response.json();
+                const result = await response.json();
 
-                    if (result.success && result.metadata) {
-                        state.artist.name = result.metadata.artistName || '';
-                        state.artist.email = result.metadata.email || '';
-                        state.artist.releaseYears = result.metadata.releaseYears || '';
-                        state.artist.ownsMasters = result.metadata.ownsMasters;
-                        state.artist.isComposer = result.metadata.isComposer;
-                        state.artist.tracks = result.metadata.tracks || [];
-                        state.uploadedText = result.metadata.notes || '';
-                    } else {
-                        processTextFallback(text);
-                    }
-                } catch (error) {
-                    console.error('API error:', error);
+                if (result.success && result.metadata) {
+                    state.artist.name = result.metadata.artistName || '';
+                    state.artist.email = result.metadata.email || '';
+                    state.artist.releaseYears = result.metadata.releaseYears || '';
+                    state.artist.ownsMasters = result.metadata.ownsMasters;
+                    state.artist.isComposer = result.metadata.isComposer;
+                    state.artist.tracks = result.metadata.tracks || [];
+                    state.uploadedText = result.metadata.notes || '';
+                } else {
                     processTextFallback(text);
                 }
-                
+
                 state.step = 'review';
                 render();
-            }, 1000);
+            } catch (error) {
+                console.error('API error:', error);
+                processTextFallback(text);
+                state.step = 'review';
+                render();
+            }
         }
 
         async function processFile(file) {
@@ -550,29 +548,24 @@ Release: 2024"
                 let fileData;
                 let fileType;
 
-                // Handle different file types
+                // Determine file type and convert to base64
                 if (file.type.startsWith('image/')) {
-                    // Convert image to base64
                     fileData = await fileToBase64(file);
                     fileType = 'image';
                 } else if (file.type === 'application/pdf') {
-                    // Convert PDF to base64
                     fileData = await fileToBase64(file);
                     fileType = 'pdf';
                 } else {
-                    // Text file
                     fileData = await file.text();
                     fileType = 'text';
                 }
 
-                // Call Vercel API for extraction
+                // Call API for extraction
                 const response = await fetch('/api/extract', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        fileData: fileType === 'text' ? fileData : fileData.split(',')[1], // Remove data:image/jpeg;base64, prefix
+                        fileData: fileType === 'text' ? fileData : fileData.split(',')[1],
                         fileType: fileType,
                         fileName: file.name
                     })
@@ -581,7 +574,7 @@ Release: 2024"
                 const result = await response.json();
 
                 if (result.success && result.metadata) {
-                    // Use AI-extracted metadata
+                    // Use Claude-extracted metadata
                     state.artist.name = result.metadata.artistName || '';
                     state.artist.email = result.metadata.email || '';
                     state.artist.releaseYears = result.metadata.releaseYears || '';
@@ -589,18 +582,16 @@ Release: 2024"
                     state.artist.isComposer = result.metadata.isComposer;
                     state.artist.tracks = result.metadata.tracks || [];
                     state.uploadedText = result.metadata.notes || '';
-                } else if (result.fallback) {
-                    // Fallback to basic extraction
-                    const text = fileType === 'text' ? fileData : '';
-                    processTextFallback(text);
+                } else {
+                    // Fallback to regex extraction
+                    processTextFallback(fileType === 'text' ? fileData : '');
                 }
 
                 state.step = 'review';
                 render();
             } catch (error) {
-                console.error('Processing error:', error);
-                // Fallback to manual entry
-                alert('Could not extract data automatically. Please fill in the form manually.');
+                console.error('Extraction error:', error);
+                alert('Extraction failed. Please fill in the form manually.');
                 state.step = 'review';
                 render();
             }
