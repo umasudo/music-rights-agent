@@ -50,23 +50,60 @@ export default async function handler(req, res) {
     // Add extraction instructions
     claudeMessages.push({
       type: 'text',
-      text: `Extract music metadata from this content and return ONLY a valid JSON object (no markdown, no explanation).
+      text: `You are a careful rights administrator extracting music metadata.
 
-Required format:
+CRITICAL RULES:
+1. NEVER infer or guess. Only extract what is explicitly stated.
+2. If information is ambiguous or conflicting, mark it as CONFLICTED.
+3. If information is missing, return null - do NOT fill gaps.
+4. Biographical context (where someone lives, when they moved) is NOT release information.
+5. Preserve uncertainty. "maybe" or "might" in source = UNCERTAIN in output.
+6. Release years must be explicitly stated as release dates, not biographical dates.
+7. Multiple releases = separate records in the releases array.
+
+Return ONLY valid JSON (no markdown, no explanation):
+
 {
-  "artistName": "artist name if found, empty string if not",
-  "email": "email if found, empty string if not",
-  "releaseYears": "year or year range if found (e.g. '2024' or '2023-2024'), empty string if not",
-  "ownsMasters": true/false/null (true if text mentions owning masters/produced by artist, false if label mentioned, null if unclear),
-  "isComposer": true/false/null (true if mentions written by/composed by artist, false if co-written, null if unclear),
-  "tracks": ["array", "of", "track", "titles", "found"],
-  "notes": "any additional relevant information about roles, collaborators, or ownership"
+  "artist": {
+    "name": "artist name if found" or null,
+    "email": "email if found" or null
+  },
+  "releases": [
+    {
+      "title": "release title if mentioned" or "Untitled Release",
+      "type": "EP" | "Single" | "Album" | "UNKNOWN",
+      "year": "YYYY" or null,
+      "tracks": ["track 1", "track 2"] or []
+    }
+  ],
+  "rights": {
+    "masterOwnership": "OWNS" | "DOES_NOT_OWN" | "PARTIAL" | "CONFLICTED" | "UNKNOWN",
+    "masterOwnershipNotes": "explanation if conflicted or uncertain",
+    "composition": "SOLE" | "CO_WRITTEN" | "CONFLICTED" | "UNKNOWN",
+    "compositionNotes": "explanation if conflicted or uncertain"
+  },
+  "clarificationNeeded": [
+    "specific question about ambiguous point"
+  ],
+  "parsingErrors": [
+    "description of what failed to parse"
+  ]
 }
 
-Be generous in extraction - if something looks like a track title, include it. If ownership is implied, mark it true.`
+Examples of CONFLICTED:
+- Text says "I own the masters" but also "produced at X Studio under contract" → CONFLICTED
+- Text says "I wrote everything" but also "co-produced with Y" → check if co-production = co-writing
+
+Examples of what NOT to extract as release year:
+- "living in Brussels since 2019" → NOT a release year
+- "started making music in 2020" → NOT a release year
+- "Released Summer EP in 2024" → YES, this is a release year
+
+If track extraction fails or produces garbage, add to parsingErrors. Do not return broken data.`
     });
 
     // Call Claude API
+    // NOTE: In production, use environment variable for API key
     const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
     
     if (!anthropicApiKey) {
